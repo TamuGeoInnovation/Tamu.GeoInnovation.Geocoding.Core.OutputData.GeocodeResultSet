@@ -1,5 +1,0 @@
-C:\DevSource\Tamu\GeoInnovation\Geocoding.Core.OutputData.GeocodeResultSet\build\1.0.0\AnyCPU\release\Tamu.GeoInnovation.Geocoding.Core.OutputData.GeocodeResultSet.dll
-C:\DevSource\Tamu\GeoInnovation\Geocoding.Core.OutputData.GeocodeResultSet\build\1.0.0\AnyCPU\release\Tamu.GeoInnovation.Geocoding.Core.OutputData.GeocodeResultSet.pdb
-C:\DevSource\Tamu\GeoInnovation\Geocoding.Core.OutputData.GeocodeResultSet\src\Main\obj\Release\Geocoding.Core.OutputData.GeocodeResultSet.Dev.csprojResolveAssemblyReference.cache
-C:\DevSource\Tamu\GeoInnovation\Geocoding.Core.OutputData.GeocodeResultSet\src\Main\obj\Release\Tamu.GeoInnovation.Geocoding.Core.OutputData.GeocodeResultSet.dll
-C:\DevSource\Tamu\GeoInnovation\Geocoding.Core.OutputData.GeocodeResultSet\src\Main\obj\Release\Tamu.GeoInnovation.Geocoding.Core.OutputData.GeocodeResultSet.pdb
