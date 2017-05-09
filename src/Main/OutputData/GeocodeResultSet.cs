@@ -328,7 +328,24 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
         public List<IGeocode> SortByHierarchyFeatureType()
         {
-            return GeocodeCollection.GetValidGeocodes();
+            return GeocodeCollection.GetValidGeocodes();            
+        }
+
+        //MULTITHREADING: Added this as part of multithreading setup - will have every source query here to sort
+        public List<IGeocode> SortByConfidence()
+        {
+            //return GeocodeCollection.GetValidGeocodes();
+            List<IGeocode> ret = new List<IGeocode>();
+            if (GeocodeCollection.Geocodes.Count > 0)
+            {
+                List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();                
+
+                //This is nothing but a placeholder. It's an ok sort but I think we need to do better
+                ret = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ToList();
+
+            }
+
+            return ret;
         }
 
     }
