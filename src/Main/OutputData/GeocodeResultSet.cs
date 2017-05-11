@@ -216,6 +216,55 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             }
         }
 
+        //PAYTON:MULTITHREADING Added this method due to HierarchyfeatureType no longer being sorted correctly due to how the threads return query results
+        public IGeocode BestGeocodeHierarchyConfidence
+        {
+            get
+            {
+                IGeocode ret = null;
+
+                List<IGeocode> tempList = new List<IGeocode>();
+                if (GeocodeCollection.Geocodes.Count > 0)
+                {
+                    List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
+
+                    //This is nothing but a placeholder. It's an ok sort but I think we need to do better
+                    tempList = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ToList();
+
+                }
+
+                if (tempList.Count > 0)
+                {                   
+                    foreach (IGeocode geocode in tempList)
+                    {
+                        if (geocode != null)
+                        {
+                            if (geocode.Valid == true && geocode.GeocodedError.ErrorBounds >= 0)
+                            {
+                                ret = geocode;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            string here = "";
+                        }
+                    }
+                }
+
+                if (ret == null)
+                {
+                    ret = new Geocode(2.94);
+                }
+
+                ret.TotalTimeTaken = TimeTaken;
+                ret.CompleteProcessStatistics = Statistics;
+
+                return ret;
+            }
+        }
+        
+
         #endregion
 
         public GeocodeResultSet()
@@ -269,50 +318,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
             return ret.ToString();
         }
-
-
-        // moved to Geocoding.Core.Algorithms.FeatureMatching.BestMatchSelectionMethods.BestMatchSelector
-        //public IGeocode GetBestMatch(GeocoderConfiguration configuration)
-        //{
-        //    FeatureMatchingSelectionMethod featureMatchingHierarchy = configuration.OutputHierarchyConfiguration.GetFeatureMatchingSelectionMethod();
-        //    return GetBestMatch(featureMatchingHierarchy);
-        //}
-
-        //public IGeocode GetBestMatch(FeatureMatchingSelectionMethod featureMatchingHierarchy)
-        //{
-        //    return GetBestMatch(featureMatchingHierarchy, 100, AreaUnitType.SquareMeters);
-        //}
-
-        //public IGeocode GetBestMatch(FeatureMatchingSelectionMethod featureMatchingHierarchy, double gridSize, AreaUnitType gridUnit)
-        //{
-        //    IGeocode ret = null;
-        //    IBestMatchMethod bestMatchMethod = null;
-
-        //    switch (featureMatchingHierarchy)
-        //    {
-        //        case FeatureMatchingSelectionMethod.FeatureClassBased:
-        //            bestMatchMethod = new FeatureHierarchyBestMatchMethod();
-        //            break;
-        //        case FeatureMatchingSelectionMethod.UncertaintyMultiFeatureGraviational:
-        //            bestMatchMethod = new UncertaintyHierarchyMultiFeatureGravitationalBestMatchMethod(gridSize, gridUnit);
-        //            break;
-        //        case FeatureMatchingSelectionMethod.UncertaintyMultiFeatureTopological:
-        //            bestMatchMethod = new UncertaintyHierarchyMultiFeatureTopologicalBestMatchMethod(gridSize, gridUnit);
-        //            break;
-        //        case FeatureMatchingSelectionMethod.UncertaintySingleFeatureArea:
-        //            bestMatchMethod = new UncertaintyHierarchySingleFeatureAreaBestMatchMethod();
-        //            break;
-        //        default:
-        //            throw new Exception("Unexpected or unimplmented best match method: " + featureMatchingHierarchy);
-        //    }
-
-        //    if (bestMatchMethod != null)
-        //    {
-        //        ret = bestMatchMethod.GetBestMatch(this);
-        //    }
-
-        //    return ret;
-        //}
+       
 
         public List<IGeocode> SortByHierarchyUncertainty()
         {
