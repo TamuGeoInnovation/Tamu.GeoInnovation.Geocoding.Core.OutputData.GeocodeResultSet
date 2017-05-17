@@ -221,37 +221,58 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         {
             get
             {
-                IGeocode ret = null;
+                
 
-                List<IGeocode> tempList = new List<IGeocode>();
-                if (GeocodeCollection.Geocodes.Count > 0)
-                {
-                    List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
 
-                    //This is nothing but a placeholder. It's an ok sort but I think we need to do better
-                    tempList = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ToList();
+                    IGeocode ret = null;
+
+                    List<IGeocode> tempList = new List<IGeocode>();
+                    List<IGeocode> geocodes = new List<IGeocode>();
+                    if (GeocodeCollection.Geocodes.Count > 0)
+                    {
+                    try
+                    {
+                       geocodes = GeocodeCollection.GetValidGeocodes();
+                       
+                    }
+                    catch (Exception e)
+                    {
+                        throw new Exception("Error in BestGeocodeHierarchyConfidence: getValidGeocodes " + e.InnerException + " and msg: " + e.Message);
+                    }
+                    try
+                    {
+                        tempList = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ToList();
+
+                    }
+                    catch (Exception e)
+                    {
+                        throw new Exception("Error in OrderBy(d => d.NAACCRGISCoordinateQualityCode " + e.InnerException + " and msg: " + e.Message);
+                    }
+                    
+                    //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
+
 
                 }
 
-                if (tempList.Count > 0)
-                {                   
-                    foreach (IGeocode geocode in tempList)
+                    if (tempList.Count > 0)
                     {
-                        if (geocode != null)
+                        foreach (IGeocode geocode in tempList)
                         {
-                            if (geocode.Valid == true && geocode.GeocodedError.ErrorBounds >= 0)
+                            if (geocode != null)
                             {
-                                ret = geocode;
-                                break;
+                                if (geocode.Valid == true && geocode.GeocodedError.ErrorBounds >= 0)
+                                {
+                                    ret = geocode;
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                string here = "";
                             }
                         }
-                        else
-                        {
-                            string here = "";
-                        }
                     }
-                }
-
+                
                 if (ret == null)
                 {
                     ret = new Geocode(2.94);
@@ -344,9 +365,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             List<IGeocode> ret = new List<IGeocode>();
             if (GeocodeCollection.Geocodes.Count > 0)
             {
-                List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();                
+                List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
 
-                //This is nothing but a placeholder. It's an ok sort but I think we need to do better
+                //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
                 ret = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ToList();
 
             }
