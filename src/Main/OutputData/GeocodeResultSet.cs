@@ -221,8 +221,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         {
             get
             {
-                
 
+                try
+                {
 
                     IGeocode ret = null;
 
@@ -230,30 +231,29 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     List<IGeocode> geocodes = new List<IGeocode>();
                     if (GeocodeCollection.Geocodes.Count > 0)
                     {
-                    try
-                    {
-                       geocodes = GeocodeCollection.GetValidGeocodes();
-                       
-                    }
-                    catch (Exception e)
-                    {
-                        throw new Exception("Error in BestGeocodeHierarchyConfidence: getValidGeocodes " + e.InnerException + " and msg: " + e.Message);
-                    }
-                    try
-                    {
-                        tempList = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ToList();
+                        try
+                        {
+                            geocodes = GeocodeCollection.GetValidGeocodes();
+
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception("Error in BestGeocodeHierarchyConfidence: getValidGeocodes " + e.InnerException + " and msg: " + e.Message);
+                        }
+                        try
+                        {
+                            tempList = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ToList();
+
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception("Error in OrderBy(d => d.NAACCRGISCoordinateQualityCode " + e.InnerException + " and msg: " + e.Message);
+                        }
+
+                        //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
+
 
                     }
-                    catch (Exception e)
-                    {
-                        throw new Exception("Error in OrderBy(d => d.NAACCRGISCoordinateQualityCode " + e.InnerException + " and msg: " + e.Message);
-                    }
-                    
-                    //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
-
-
-                }
-
                     if (tempList.Count > 0)
                     {
                         foreach (IGeocode geocode in tempList)
@@ -272,16 +272,21 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                             }
                         }
                     }
-                
-                if (ret == null)
-                {
-                    ret = new Geocode(2.94);
+
+                    if (ret == null)
+                    {
+                        ret = new Geocode(2.94);
+                    }
+
+                    ret.TotalTimeTaken = TimeTaken;
+                    ret.CompleteProcessStatistics = Statistics;
+
+                    return ret;
                 }
-
-                ret.TotalTimeTaken = TimeTaken;
-                ret.CompleteProcessStatistics = Statistics;
-
-                return ret;
+                catch(Exception e)
+                {
+                    throw new Exception("Error in MAIN BestGeocodeHierarchyConfidence " + e.InnerException + " and msg: " + e.Message);
+                }
             }
         }
         
