@@ -30,6 +30,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         public string TransactionId { get; set; }
         public string RecordId { get; set; }
         public string GeocoderName { get; set; }
+        public string MicroMatchStatus { get; set; }
 
         public FeatureMatchingResultType FeatureMatchingResultType { get; set; }
         public int FeatureMatchingResultCount { get; set; }
