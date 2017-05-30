@@ -364,7 +364,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             return GeocodeCollection.GetValidGeocodes();            
         }
 
-        //PAYTON:MULTITHREADING: Added this as part of multithreading setup - will have every source query here to sort
+        //PAYTON:MULTITHREADING-SORT Added this as part of multithreading setup - will have every source query here to sort
         public List<IGeocode> SortByConfidence()
         {
             //return GeocodeCollection.GetValidGeocodes();
