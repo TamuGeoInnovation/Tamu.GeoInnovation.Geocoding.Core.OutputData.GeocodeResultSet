@@ -375,11 +375,78 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
                 //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
                 ret = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
-
+                this.GeocodeCollection.Geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore);
             }
 
             return ret;
         }
 
+        public List<IGeocode> SortByConfidence(List<IGeocode> geocodes)
+        {
+            List<IGeocode> ret = new List<IGeocode>();
+            List<IGeocode> geocodeList = new List<IGeocode>();
+            if (geocodes.Count > 0)            {
+                
+                int i = 0;
+                try
+                {
+                    foreach (IGeocode g in geocodes)
+                    {
+                        if (!object.ReferenceEquals(null, g))
+                        {
+                            if (g.Valid)
+                            {
+                                geocodeList.Add(g);
+                            }
+                        }
+                        i++;
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new Exception("BOO in getValidGeocodes " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
+                }
+
+                //This is nothing but a placeholder. It's an ok sort but we need to get a better sort here
+                ret = geocodeList.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
+                
+            }
+
+            return ret;
+        }
+
+        //PAYTON:MICROMATCHSTATUS - we need to determine the actual micro match status here - this is just a placeholder
+        public bool GetMicroMatchStatus()
+        {
+            bool ret = false;
+            //            
+            
+            List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
+            List<IGeocode> geocodes = SortByConfidence(geocodesIn);
+
+            if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+            {
+                if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
+                {
+                    if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP)
+                    {
+                        this.MicroMatchStatus = "Match";
+                    }
+                    else
+                    {
+                        this.MicroMatchStatus = "Review";
+                    }
+                }
+                else
+                {
+                    this.MicroMatchStatus = "Review";
+                }
+            }
+            else //anything not match or review is returned as non-match
+            {
+                this.MicroMatchStatus = "Non-Match";
+            }
+            return ret;
+        }
     }
 }

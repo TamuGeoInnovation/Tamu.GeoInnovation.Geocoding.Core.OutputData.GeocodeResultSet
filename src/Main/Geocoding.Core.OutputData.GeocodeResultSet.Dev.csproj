@@ -163,6 +163,10 @@
     <Content Include="SqlServerTypes\readme.htm" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Common.Core.Addresses\Src\Main\Common.Core.Addresses.Dev.csproj">
+      <Project>{29c0949b-4d41-4138-b59b-6de4a6a1774e}</Project>
+      <Name>Common.Core.Addresses.Dev</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Common.Core.Configurations\Src\Main\Common.Core.Configurations.Dev.csproj">
       <Project>{CA57DD09-BCF7-439A-A6FB-6FCBE125FB71}</Project>
       <Name>Common.Core.Configurations.Dev</Name>
