@@ -373,6 +373,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
 
+                //Ideally we want to use the default order of preferred references here to get the best geocode 
+                //DefaultOrderedReferenceSourceTypes
+
                 //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
                 ret = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
                 this.GeocodeCollection.Geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore);
