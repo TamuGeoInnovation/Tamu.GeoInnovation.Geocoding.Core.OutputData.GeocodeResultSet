@@ -8,9 +8,15 @@ using System.Xml.Serialization;
 
 using USC.GISResearchLab.Geocoding.Core.Configurations;
 using USC.GISResearchLab.Geocoding.Core.Metadata;
+
+using USC.GISResearchLab.Common.Core.Geocoders.ReferenceDatasets.Sources.Interfaces;
+using USC.GISResearchLab.Geocoding.Core.ReferenceDatasets.Sources.Implementations;
+using USC.GISResearchLab.Common.Core.Databases;
+using USC.GISResearchLab.Geocoding.Core.Metadata.ReferenceSources;
 using USC.GISResearchLab.Geocoding.Core.Metadata.FeatureMatchingResults;
 using USC.GISResearchLab.Geocoding.Core.Metadata.Qualities;
 using USC.GISResearchLab.Core.WebServices.ResultCodes;
+using System.Reflection;
 
 namespace USC.GISResearchLab.Geocoding.Core.OutputData
 {
@@ -243,6 +249,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                         }
                         try
                         {
+                            //PAYTON:MULTITHREADING-sort I'm concerned about the overhead of the sort here in batch processing - should be using sortbyconfidence()                            
                             tempList = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ToList();
 
                         }
@@ -373,7 +380,10 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
 
-                //Ideally we want to use the default order of preferred references here to get the best geocode 
+                //Ideally we want to use the default order of preferred references here to get the best geocode                 
+                
+                //IFeatureSource[] referenceSources = BuildReferenceSources(geocoderConfiguration, geocoderConfiguration.OutputHierarchyConfiguration.FeatureMatchingHierarchyOrdering);
+
                 //DefaultOrderedReferenceSourceTypes
 
                 //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
@@ -384,6 +394,36 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             return ret;
         }
 
+        public List<IGeocode> SortByConfidence(GeocoderConfiguration geocoderConfiguration)
+        {
+            //return GeocodeCollection.GetValidGeocodes();
+            List<IGeocode> ret = new List<IGeocode>();
+            if (GeocodeCollection.Geocodes.Count > 0)
+            {
+                List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
+
+                var geoRefList = geocodes.ToList(); //this is the current geocode order
+                var ReferenceDataSources = geocoderConfiguration.ReferenceDatasetConfiguration.ReferenceDataSources; //this is the preferred reference order
+
+                foreach (var reference in ReferenceDataSources)
+                {
+
+                    PropertyInfo pi = reference.GetType().GetProperty("Name");
+                    string refTxt = (String)(pi.GetValue(reference, null));                    
+                    foreach (var geoRef in geoRefList)
+                    {                        
+                        if (refTxt.Contains(geoRef.SourceType))
+                        {
+                            ret.Add(geoRef);
+                            break;
+                        }
+                    }
+                }
+                //PAYTON:MULTITHREADING-sort at this point we have it sorted based on Preferred reference. We still need to select the 'best' geocode
+            }
+            return ret;
+        }
+        
         public List<IGeocode> SortByConfidence(List<IGeocode> geocodes)
         {
             List<IGeocode> ret = new List<IGeocode>();
@@ -418,6 +458,58 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             return ret;
         }
 
+        public List<IGeocode> SortByConfidence(List<IGeocode> geocodes, GeocoderConfiguration geocoderConfiguration)
+        {
+            List<IGeocode> ret = new List<IGeocode>();
+            List<IGeocode> geocodeList = new List<IGeocode>();
+            if (geocodes.Count > 0)
+            {
+
+                int i = 0;
+                try
+                {
+                    foreach (IGeocode g in geocodes)
+                    {
+                        if (!object.ReferenceEquals(null, g))
+                        {
+                            if (g.Valid)
+                            {
+                                geocodeList.Add(g);
+                            }
+                        }
+                        i++;
+                    }
+                }
+                catch (Exception e)
+                {
+                    throw new Exception("BOO in getValidGeocodes " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
+                }
+
+                var geoRefList = geocodes.ToList(); //this is the current geocode order
+                var ReferenceDataSources = geocoderConfiguration.ReferenceDatasetConfiguration.ReferenceDataSources; //this is the preferred reference order
+
+                foreach (var reference in ReferenceDataSources)
+                {
+
+                    PropertyInfo pi = reference.GetType().GetProperty("Name");
+                    string refTxt = (String)(pi.GetValue(reference, null));
+                    foreach (var geoRef in geoRefList)
+                    {
+                        if (refTxt.Contains(geoRef.SourceType))
+                        {
+                            ret.Add(geoRef);
+                            break;
+                        }
+                    }
+                }
+                //This is nothing but a placeholder. It's an ok sort but we need to get a better sort here
+                //ret = geocodeList.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
+
+            }
+
+            return ret;
+        }
+
         //PAYTON:MICROMATCHSTATUS - we need to determine the actual micro match status here - this is just a placeholder
         public bool GetMicroMatchStatus()
         {
@@ -426,6 +518,39 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
+
+            if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+            {
+                if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
+                {
+                    if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP)
+                    {
+                        this.MicroMatchStatus = "Match";
+                    }
+                    else
+                    {
+                        this.MicroMatchStatus = "Review";
+                    }
+                }
+                else
+                {
+                    this.MicroMatchStatus = "Review";
+                }
+            }
+            else //anything not match or review is returned as non-match
+            {
+                this.MicroMatchStatus = "Non-Match";
+            }
+            return ret;
+        }
+
+        public bool GetMicroMatchStatus(GeocoderConfiguration geocoderConfiguration)
+        {
+            bool ret = false;
+            //            
+
+            List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
+            List<IGeocode> geocodes = SortByConfidence(geocodesIn, geocoderConfiguration);
 
             if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
             {
