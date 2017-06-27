@@ -18,6 +18,7 @@ using USC.GISResearchLab.Geocoding.Core.Metadata.Qualities;
 using USC.GISResearchLab.Core.WebServices.ResultCodes;
 using System.Reflection;
 
+
 namespace USC.GISResearchLab.Geocoding.Core.OutputData
 {
     public class GeocodeResultSet
@@ -316,7 +317,13 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
         public void AddGeocodeList(List<IGeocode> geocodes)
         {
-            GeocodeCollection.Geocodes.AddRange(geocodes);
+            try {
+                GeocodeCollection.Geocodes.AddRange(geocodes);
+            }
+            catch (Exception e)
+            {
+                string excp = e.Message;
+            }
         }
 
         public override string ToString()
@@ -513,13 +520,13 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         //PAYTON:MICROMATCHSTATUS - we need to determine the actual micro match status here - this is just a placeholder
         public bool GetMicroMatchStatus()
         {
-            bool ret = false;
-            //            
+            bool ret = false;                   
             
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
-
-            if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+            // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
+            //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+            if (geocodes[0].MatchScore > 90)
             {
                 if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                 {
@@ -551,9 +558,10 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn, geocoderConfiguration);
-
-            if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
-            {
+            // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
+            //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+            if (geocodes[0].MatchScore > 90)
+                {
                 if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                 {
                     if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP)
