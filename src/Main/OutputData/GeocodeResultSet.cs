@@ -421,8 +421,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     {                        
                         if (refTxt.Contains(geoRef.SourceType))
                         {
-                            ret.Add(geoRef);
-                            break;
+                            ret.Add(geoRef);                            
                         }
                     }
                 }
