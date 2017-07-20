@@ -3,12 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
-
-
-
+using System.Drawing;
 using USC.GISResearchLab.Geocoding.Core.Configurations;
 using USC.GISResearchLab.Geocoding.Core.Metadata;
-
 using USC.GISResearchLab.Common.Core.Geocoders.ReferenceDatasets.Sources.Interfaces;
 using USC.GISResearchLab.Geocoding.Core.ReferenceDatasets.Sources.Implementations;
 using USC.GISResearchLab.Common.Core.Databases;
@@ -519,37 +516,78 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         //PAYTON:MICROMATCHSTATUS - we need to determine the actual micro match status here - this is just a placeholder
         public bool GetMicroMatchStatus()
         {
-            bool ret = false;                   
-            
+            bool ret = false;            
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
-            // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
-            //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
-            if (geocodes[0].MatchScore > 90)
+            if (geocodes.Count > 0)
             {
-                if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
+                // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
+                //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+                if (geocodes[0].MatchScore > 88)
                 {
-                    if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP)
+                    if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                     {
-                        this.MicroMatchStatus = "Match";
+                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP)
+                        {
+                            this.MicroMatchStatus = "Match";
+                        }
+                        else
+                        {
+                            this.MicroMatchStatus = "Review";
+                            double avgDistance = getAverageDistance();
+                            if (avgDistance < .05 && geocodes.Count > 5)
+                            {
+                                this.MicroMatchStatus = "Match";
+                            }
+                        }
                     }
                     else
                     {
                         this.MicroMatchStatus = "Review";
                     }
                 }
-                else
+                else //anything not match or review is returned as non-match
                 {
-                    this.MicroMatchStatus = "Review";
+                    this.MicroMatchStatus = "Non-Match";
                 }
             }
-            else //anything not match or review is returned as non-match
+            else //if no matches were found - return Non-match
             {
                 this.MicroMatchStatus = "Non-Match";
             }
             return ret;
         }
 
+        public double getAverageDistance()
+        {
+            List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
+            List<IGeocode> geocodes = SortByConfidence(geocodesIn);
+            int num_points = geocodes.Count;
+            PointF[] pts = new PointF[num_points + 1];
+            //List<Point> normalPoints = new List<Point>();
+            List<PointF> points = new List<PointF>();
+            foreach (var resultPoint in geocodes)
+            {
+                //normalPoints.Add(new Point(Convert.ToInt32(resultPoint.Longitude), Convert.ToInt32(resultPoint.Latitude)));
+                points.Add(new PointF(Convert.ToSingle(resultPoint.Longitude), Convert.ToSingle(resultPoint.Latitude)));
+            }
+            points.CopyTo(pts, 0);
+            pts[num_points] = points[0];
+            float area = 0;
+            double distance = 0;
+            for (int i = 0; i < num_points; i++)
+            {
+                //area +=
+                //    (pts[i + 1].X - pts[i].X) *
+                //    (pts[i + 1].Y + pts[i].Y) / 2;
+                double dX = pts[0].X - pts[i + 1].X;
+                double dY = pts[0].Y - pts[i + 1].Y;
+                double multi = dX * dX + dY * dY;
+                distance = distance + Math.Round(Math.Sqrt(multi), 3);
+            }
+            double distanceAvg = ((distance) / num_points) * 100;
+            return distanceAvg;
+        }
         public bool GetMicroMatchStatus(GeocoderConfiguration geocoderConfiguration)
         {
             bool ret = false;
@@ -557,24 +595,39 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn, geocoderConfiguration);
-            // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
-            //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
-            if (geocodes[0].MatchScore > 90)
+            if (geocodes.Count > 0)
+            {
+                // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
+                //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+                if (geocodes[0].MatchScore > 88)
                 {
-                if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
-                {
-                    if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP)
+                    if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                     {
-                        this.MicroMatchStatus = "Match";
+                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP)
+                        {
+                            this.MicroMatchStatus = "Match";
+                        }
+                        else
+                        {
+                            this.MicroMatchStatus = "Review";
+                            double avgDistance = getAverageDistance();
+                            //If the average distance is less than 1/5 of a mile - assume it's a good match
+                            //Adding a count check as well to account for all navteq references to return a non-valid match but all the same coords
+                            //if count is > 5 it's safe to assume that multiple references are reporting the same location for the address
+                            if (avgDistance < .05 && geocodes.Count > 5)
+                            {
+                                this.MicroMatchStatus = "Match";
+                            }
+                        }
                     }
                     else
                     {
                         this.MicroMatchStatus = "Review";
                     }
                 }
-                else
+                else //anything not match or review is returned as non-match
                 {
-                    this.MicroMatchStatus = "Review";
+                    this.MicroMatchStatus = "Non-Match";
                 }
             }
             else //anything not match or review is returned as non-match
