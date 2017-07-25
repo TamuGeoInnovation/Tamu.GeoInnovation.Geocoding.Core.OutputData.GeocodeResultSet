@@ -201,6 +201,10 @@
       <Name>Geocoding.Core.Metadata.Qualities.MatchTypes.Dev</Name>
       <Private>False</Private>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Geocoding.Core.Metadata.Qualities.Naaccr.Types\src\Main\Geocoding.Core.Metadata.Qualities.Naaccr.Types.Dev.csproj">
+      <Project>{50628EB4-3848-4256-819C-842A3B208319}</Project>
+      <Name>Geocoding.Core.Metadata.Qualities.Naaccr.Types.Dev</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Geocoding.Core.Metadata.ReferenceSources\src\Main\Geocoding.Core.Metadata.ReferenceSources.Dev.csproj">
       <Project>{36bf7e5c-d27b-49dc-a7a3-1e9a2845798a}</Project>
       <Name>Geocoding.Core.Metadata.ReferenceSources.Dev</Name>
@@ -226,6 +230,10 @@
     <ProjectReference Include="..\..\..\Geocoding.Core.ReferenceDatasets.FeatureSources\src\Main\Geocoding.Core.ReferenceDatasets.FeatureSources.Dev.csproj">
       <Project>{2c4a6d3d-a46a-4988-a34d-be8be5d63fc3}</Project>
       <Name>Geocoding.Core.ReferenceDatasets.FeatureSources.Dev</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\PointIntersectors.Census\src\Main\PointIntersectors.Census.Dev.csproj">
+      <Project>{5328fadb-9d7c-410a-877e-f03e08367d9c}</Project>
+      <Name>PointIntersectors.Census.Dev</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

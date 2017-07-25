@@ -36,6 +36,8 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         public string GeocoderName { get; set; }
         public string MicroMatchStatus { get; set; }
 
+        public int parcelMatches = 0;
+        public int streetMatches = 0;
         public FeatureMatchingResultType FeatureMatchingResultType { get; set; }
         public int FeatureMatchingResultCount { get; set; }
 
@@ -527,15 +529,27 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 {
                     if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                     {
-                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP)
+                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 98)
                         {
                             this.MicroMatchStatus = "Match";
                         }
                         else
                         {
                             this.MicroMatchStatus = "Review";
-                            double avgDistance = getAverageDistance();
-                            if (avgDistance < .05 && geocodes.Count > 5)
+                            //double avgDistance = getAverageDistance();
+                            parcelMatches = 0;
+                            streetMatches = 0;
+                            double avgParcelDistance = getAverageDistance("parcel");
+                            double avgStreetDistance = getAverageDistance("street");
+                            //if (avgDistance < .05 && geocodes.Count > 5 && getCensusMatchStatus())
+                            //{
+                            //    this.MicroMatchStatus = "Match";
+                            //}
+                            if (avgParcelDistance < .05 && parcelMatches > 1 && getCensusMatchStatus())
+                            {
+                                this.MicroMatchStatus = "Match";
+                            }
+                            if (parcelMatches == 0 && streetMatches > 1 && avgStreetDistance < .05 && getCensusMatchStatus())
                             {
                                 this.MicroMatchStatus = "Match";
                             }
@@ -558,6 +572,100 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             return ret;
         }
 
+        public double getAverageDistance(string type)
+        {
+            List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
+            List<IGeocode> geocodes = SortByConfidence(geocodesIn);
+            int num_points = 0;           
+            //List<Point> normalPoints = new List<Point>();
+            List<PointF> points = new List<PointF>();
+            foreach (var resultPoint in geocodes)
+            {
+                //normalPoints.Add(new Point(Convert.ToInt32(resultPoint.Longitude), Convert.ToInt32(resultPoint.Latitude)));
+                if (type == "parcel")
+                {
+                    if (resultPoint.NAACCRGISCoordinateQualityType == NAACCRGISCoordinateQualityType.AddressPoint ||
+                       resultPoint.NAACCRGISCoordinateQualityType == NAACCRGISCoordinateQualityType.Parcel)
+                    {
+                        points.Add(new PointF(Convert.ToSingle(resultPoint.Longitude), Convert.ToSingle(resultPoint.Latitude)));
+                        parcelMatches++;
+                        num_points++;
+                    }
+                }
+                else if (type == "street")
+                {
+                    if (resultPoint.NAACCRGISCoordinateQualityType == Metadata.Qualities.NAACCRGISCoordinateQualityType.StreetCentroid ||
+                        resultPoint.NAACCRGISCoordinateQualityType == Metadata.Qualities.NAACCRGISCoordinateQualityType.StreetIntersection ||
+                        resultPoint.NAACCRGISCoordinateQualityType == Metadata.Qualities.NAACCRGISCoordinateQualityType.StreetSegmentInterpolation)
+                    {
+                        points.Add(new PointF(Convert.ToSingle(resultPoint.Longitude), Convert.ToSingle(resultPoint.Latitude)));
+                        streetMatches++;
+                        num_points++;
+                    }
+                }
+            }
+            PointF[] pts = new PointF[num_points];
+            points.CopyTo(pts, 0);
+            //pts[num_points] = points[0];
+            float area = 0;
+            double distance = 0;
+            double distanceAvg = 0;
+            if (points.Count > 1)
+            {
+                for (int i = 0; i < num_points - 1; i++)
+                {
+                    //area +=
+                    //    (pts[i + 1].X - pts[i].X) *
+                    //    (pts[i + 1].Y + pts[i].Y) / 2;
+                    double dX = pts[0].X - pts[i + 1].X;
+                    double dY = pts[0].Y - pts[i + 1].Y;
+                    double multi = dX * dX + dY * dY;
+                    distance = distance + Math.Round(Math.Sqrt(multi), 3);
+                }
+                distanceAvg = ((distance) / (num_points - 1)) * 100;
+            }
+            else
+            {
+                distanceAvg = 0;
+            }
+            return distanceAvg;
+        }
+
+        public bool getCensusMatchStatus()
+        {
+            bool censusMatches = true;
+            List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
+            List<IGeocode> geocodes = SortByConfidence(geocodesIn);
+            if (geocodes[0].CensusRecords.Count > 0)
+            {
+                string censusTract = geocodes[0].CensusRecords[0].CensusTract.ToString();
+                string censusBlock = geocodes[0].CensusRecords[0].CensusBlock.ToString();
+                string countyFips = geocodes[0].CensusRecords[0].CensusCountyFips.ToString();
+                foreach (var geocode in geocodes)
+                {
+                    if (geocode.CensusRecords[0].CensusBlock != censusBlock)
+                    {
+                        censusMatches = false;
+                        break;
+                    }
+                    else if (geocode.CensusRecords[0].CensusTract != censusTract)
+                    {
+                        censusMatches = false;
+                        break;
+                    }
+                    else if (geocode.CensusRecords[0].CensusCountyFips != countyFips)
+                    {
+                        censusMatches = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                censusMatches = false;
+            }
+            return censusMatches;
+        }
         public double getAverageDistance()
         {
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
