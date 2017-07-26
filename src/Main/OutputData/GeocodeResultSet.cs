@@ -636,28 +636,35 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             bool censusMatches = true;
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
-            if (geocodes[0].CensusRecords.Count > 0)
+            if (geocodes[0].CensusRecords != null)
             {
-                string censusTract = geocodes[0].CensusRecords[0].CensusTract.ToString();
-                string censusBlock = geocodes[0].CensusRecords[0].CensusBlock.ToString();
-                string countyFips = geocodes[0].CensusRecords[0].CensusCountyFips.ToString();
-                foreach (var geocode in geocodes)
+                if (geocodes[0].CensusRecords.Count > 0)
                 {
-                    if (geocode.CensusRecords[0].CensusBlock != censusBlock)
+                    string censusTract = geocodes[0].CensusRecords[0].CensusTract.ToString();
+                    string censusBlock = geocodes[0].CensusRecords[0].CensusBlock.ToString();
+                    string countyFips = geocodes[0].CensusRecords[0].CensusCountyFips.ToString();
+                    foreach (var geocode in geocodes)
                     {
-                        censusMatches = false;
-                        break;
+                        if (geocode.CensusRecords[0].CensusBlock != censusBlock)
+                        {
+                            censusMatches = false;
+                            break;
+                        }
+                        else if (geocode.CensusRecords[0].CensusTract != censusTract)
+                        {
+                            censusMatches = false;
+                            break;
+                        }
+                        else if (geocode.CensusRecords[0].CensusCountyFips != countyFips)
+                        {
+                            censusMatches = false;
+                            break;
+                        }
                     }
-                    else if (geocode.CensusRecords[0].CensusTract != censusTract)
-                    {
-                        censusMatches = false;
-                        break;
-                    }
-                    else if (geocode.CensusRecords[0].CensusCountyFips != countyFips)
-                    {
-                        censusMatches = false;
-                        break;
-                    }
+                }
+                else
+                {
+                    censusMatches = false;
                 }
             }
             else
@@ -711,7 +718,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 {
                     if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                     {
-                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP)
+                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 98)
                         {
                             this.MicroMatchStatus = "Match";
                         }
