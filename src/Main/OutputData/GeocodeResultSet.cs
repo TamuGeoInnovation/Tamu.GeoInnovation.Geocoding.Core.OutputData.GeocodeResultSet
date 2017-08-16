@@ -396,7 +396,12 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 ret = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
                 this.GeocodeCollection.Geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore);
             }
-
+            //if no valid geocodes exist ret needs to add top to be unmatchable
+            else
+            {
+                ret.Add(GeocodeCollection.Geocodes[0]);
+            }
+            GeocodeCollection.Geocodes = ret;
             return ret;
         }
 
@@ -425,7 +430,42 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     }
                 }
                 //PAYTON:MULTITHREADING-sort at this point we have it sorted based on Preferred reference. We still need to select the 'best' geocode
+                //PAYTON:v4.03 Updating to return lower level street match if the zipcode matches input zipcode
+                if (geocodes.Count > 0)
+                {
+                    if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP)
+                    {
+                        double score = ret[0].MatchScore;
+                        int i = 0;
+                        try
+                        {
+                            foreach (IGeocode g in ret)
+                            {
+                                if (!object.ReferenceEquals(null, g))
+                                {
+                                    if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
+                                    {
+                                        ret.RemoveAt(i);
+                                        ret.Insert(0, g);
+                                        break;
+                                    }
+                                }
+                                i++;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception("BOO in checkForBetterMatch " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
+                        }
+                    }                    
+                }
+                //if no valid geocodes exist ret needs to add top to be unmatchable
+                else
+                {
+                    ret.Add(GeocodeCollection.Geocodes[0]);
+                }                
             }
+            GeocodeCollection.Geocodes = ret;
             return ret;
         }
         
@@ -455,11 +495,45 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     throw new Exception("BOO in getValidGeocodes " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
                 }
 
-                //This is nothing but a placeholder. It's an ok sort but we need to get a better sort here
+                //This is nothing but a placeholder. It's an ok sort but we need to get a better sort here                
                 ret = geocodeList.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
-                
-            }
 
+                //PAYTON:v4.03 Updating to return lower level street match if the zipcode matches input zipcode
+                if (geocodes.Count > 0)
+                {
+                    if (geocodeList[0].MatchedFeatureAddress.ZIP != geocodeList[0].InputAddress.ZIP)
+                    {
+                        double score = geocodeList[0].MatchScore;
+                        i = 0;
+                        try
+                        {
+                            foreach (IGeocode g in geocodes)
+                            {
+                                if (!object.ReferenceEquals(null, g))
+                                {
+                                    if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
+                                    {
+                                        geocodeList.RemoveAt(i);
+                                        geocodeList.Insert(0, g);
+                                        break;
+                                    }
+                                }
+                                i++;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception("BOO in getValidGeocodes " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
+                        }
+                    }
+                }
+                //if no valid geocodes exist ret needs to add top to be unmatchable
+                else
+                {
+                    ret.Add(GeocodeCollection.Geocodes[0]);
+                }
+            }
+            ret = geocodeList;
             return ret;
         }
 
@@ -487,7 +561,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 }
                 catch (Exception e)
                 {
-                    throw new Exception("BOO in getValidGeocodes " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
+                    throw new Exception("BOO in SortByConfidence " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
                 }
 
                 var geoRefList = geocodes.ToList(); //this is the current geocode order
@@ -509,7 +583,40 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 }
                 //This is nothing but a placeholder. It's an ok sort but we need to get a better sort here
                 //ret = geocodeList.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
-
+                //PAYTON:v4.03 Updating to return lower level street match if the zipcode matches input zipcode
+                if (geocodes.Count > 0)
+                {
+                    if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP)
+                    {
+                        double score = ret[0].MatchScore;
+                        i = 0;
+                        try
+                        {
+                            foreach (IGeocode g in ret)
+                            {
+                                if (!object.ReferenceEquals(null, g))
+                                {
+                                    if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
+                                    {
+                                        ret.RemoveAt(i);
+                                        ret.Insert(0, g);
+                                        break;
+                                    }
+                                }
+                                i++;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception("BOO in checkForBetterMatch " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
+                        }
+                    }
+                }
+                //if no valid geocodes exist ret needs to add top to be unmatchable
+                else
+                {
+                    ret.Add(GeocodeCollection.Geocodes[0]);
+                }
             }
 
             return ret;
