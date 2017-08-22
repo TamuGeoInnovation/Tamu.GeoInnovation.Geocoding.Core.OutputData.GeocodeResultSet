@@ -632,7 +632,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
                 //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
-                if (geocodes[0].MatchScore > 88)
+                if (geocodes[0].MatchScore > 84)
                 {
                     if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                     {
