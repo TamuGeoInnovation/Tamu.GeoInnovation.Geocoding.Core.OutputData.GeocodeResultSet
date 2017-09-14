@@ -457,15 +457,20 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                         {
                             throw new Exception("BOO in checkForBetterMatch " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
                         }
-                    }                    
+                    }
+                    else //if first address zip is correct then there is no need to test remaining geocodes for better match
+                    {
+                        ret = geocodes;
+                    }               
                 }
                 //if no valid geocodes exist ret needs to add top to be unmatchable
                 else
                 {
                     ret.Add(GeocodeCollection.Geocodes[0]);
-                }                
+                }
+                //GeocodeCollection.Geocodes = ret;
             }
-            GeocodeCollection.Geocodes = ret;
+            //GeocodeCollection.Geocodes = ret;
             return ret;
         }
         
@@ -501,9 +506,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 //PAYTON:v4.03 Updating to return lower level street match if the zipcode matches input zipcode
                 if (geocodes.Count > 0)
                 {
-                    if (geocodeList[0].MatchedFeatureAddress.ZIP != geocodeList[0].InputAddress.ZIP)
+                    if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP)
                     {
-                        double score = geocodeList[0].MatchScore;
+                        double score = ret[0].MatchScore;
                         i = 0;
                         try
                         {
@@ -513,8 +518,8 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                 {
                                     if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
                                     {
-                                        geocodeList.RemoveAt(i);
-                                        geocodeList.Insert(0, g);
+                                        ret.RemoveAt(i);
+                                        ret.Insert(0, g);
                                         break;
                                     }
                                 }
@@ -533,7 +538,10 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     ret.Add(GeocodeCollection.Geocodes[0]);
                 }
             }
-            ret = geocodeList;
+            if (ret.Count < 1)
+            {
+                ret = geocodeList;
+            }
             return ret;
         }
 
@@ -632,44 +640,51 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
                 //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
-                if (geocodes[0].MatchScore > 84)
+                if (geocodes[0].MatchScore < 100)
                 {
-                    if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
+                    if (geocodes[0].MatchScore > 84)
                     {
-                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 98)
+                        if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                         {
-                            this.MicroMatchStatus = "Match";
+                            if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 98)
+                            {
+                                this.MicroMatchStatus = "Match";
+                            }
+                            else
+                            {
+                                this.MicroMatchStatus = "Review";
+                                //double avgDistance = getAverageDistance();
+                                parcelMatches = 0;
+                                streetMatches = 0;
+                                double avgParcelDistance = getAverageDistance("parcel");
+                                double avgStreetDistance = getAverageDistance("street");
+                                //if (avgDistance < .05 && geocodes.Count > 5 && getCensusMatchStatus())
+                                //{
+                                //    this.MicroMatchStatus = "Match";
+                                //}
+                                if (avgParcelDistance < .05 && parcelMatches > 1 && getCensusMatchStatus())
+                                {
+                                    this.MicroMatchStatus = "Match";
+                                }
+                                if (parcelMatches == 0 && streetMatches > 1 && avgStreetDistance < .05 && getCensusMatchStatus())
+                                {
+                                    this.MicroMatchStatus = "Match";
+                                }
+                            }
                         }
                         else
                         {
                             this.MicroMatchStatus = "Review";
-                            //double avgDistance = getAverageDistance();
-                            parcelMatches = 0;
-                            streetMatches = 0;
-                            double avgParcelDistance = getAverageDistance("parcel");
-                            double avgStreetDistance = getAverageDistance("street");
-                            //if (avgDistance < .05 && geocodes.Count > 5 && getCensusMatchStatus())
-                            //{
-                            //    this.MicroMatchStatus = "Match";
-                            //}
-                            if (avgParcelDistance < .05 && parcelMatches > 1 && getCensusMatchStatus())
-                            {
-                                this.MicroMatchStatus = "Match";
-                            }
-                            if (parcelMatches == 0 && streetMatches > 1 && avgStreetDistance < .05 && getCensusMatchStatus())
-                            {
-                                this.MicroMatchStatus = "Match";
-                            }
                         }
                     }
-                    else
+                    else //anything not match or review is returned as non-match
                     {
-                        this.MicroMatchStatus = "Review";
+                        this.MicroMatchStatus = "Non-Match";
                     }
                 }
-                else //anything not match or review is returned as non-match
+                else //if we reach here then matchscore is 100 and we return a "Match"
                 {
-                    this.MicroMatchStatus = "Non-Match";
+                    this.MicroMatchStatus = "Match";
                 }
             }
             else //if no matches were found - return Non-match
@@ -821,35 +836,42 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
                 //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
-                if (geocodes[0].MatchScore > 88)
+                if (geocodes[0].MatchScore < 100)
                 {
-                    if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
+                    if (geocodes[0].MatchScore > 84)
                     {
-                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 98)
+                        if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                         {
-                            this.MicroMatchStatus = "Match";
+                            if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 98)
+                            {
+                                this.MicroMatchStatus = "Match";
+                            }
+                            else
+                            {
+                                this.MicroMatchStatus = "Review";
+                                double avgDistance = getAverageDistance();
+                                //If the average distance is less than 1/5 of a mile - assume it's a good match
+                                //Adding a count check as well to account for all navteq references to return a non-valid match but all the same coords
+                                //if count is > 5 it's safe to assume that multiple references are reporting the same location for the address
+                                if (avgDistance < .05 && geocodes.Count > 5)
+                                {
+                                    this.MicroMatchStatus = "Match";
+                                }
+                            }
                         }
                         else
                         {
                             this.MicroMatchStatus = "Review";
-                            double avgDistance = getAverageDistance();
-                            //If the average distance is less than 1/5 of a mile - assume it's a good match
-                            //Adding a count check as well to account for all navteq references to return a non-valid match but all the same coords
-                            //if count is > 5 it's safe to assume that multiple references are reporting the same location for the address
-                            if (avgDistance < .05 && geocodes.Count > 5)
-                            {
-                                this.MicroMatchStatus = "Match";
-                            }
                         }
                     }
-                    else
+                    else //anything not match or review is returned as non-match
                     {
-                        this.MicroMatchStatus = "Review";
+                        this.MicroMatchStatus = "Non-Match";
                     }
                 }
-                else //anything not match or review is returned as non-match
+                else //if we reach here then matchscore is 100 and we return a "Match"
                 {
-                    this.MicroMatchStatus = "Non-Match";
+                    this.MicroMatchStatus = "Match";
                 }
             }
             else //anything not match or review is returned as non-match
