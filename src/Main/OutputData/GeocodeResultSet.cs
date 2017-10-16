@@ -14,7 +14,9 @@ using USC.GISResearchLab.Geocoding.Core.Metadata.FeatureMatchingResults;
 using USC.GISResearchLab.Geocoding.Core.Metadata.Qualities;
 using USC.GISResearchLab.Core.WebServices.ResultCodes;
 using System.Reflection;
-
+using USC.GISResearchLab.AddressProcessing.Core.Standardizing.StandardizedAddresses.Lines.LastLines;
+using Tamu.GeoInnovation.Geocoding.Core.Algorithms.PenaltyScoring;
+using USC.GISResearchLab.Geocoding.Core.Algorithms.FeatureMatchScorers.MatchScoreResults;
 
 namespace USC.GISResearchLab.Geocoding.Core.OutputData
 {
@@ -35,6 +37,8 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         public string RecordId { get; set; }
         public string GeocoderName { get; set; }
         public string MicroMatchStatus { get; set; }
+        public PenaltyCodeResult PenaltyCodeResult { get; set; }
+        public string PenaltyCode { get; set; }
 
         public int parcelMatches = 0;
         public int streetMatches = 0;
@@ -358,8 +362,6 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
             return ret.ToString();
         }
-       
-
         public List<IGeocode> SortByHierarchyUncertainty()
         {
             List<IGeocode> ret = new List<IGeocode>();
@@ -636,6 +638,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             bool ret = false;            
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
+            this.PenaltyCodeResult = new PenaltyCodeResult();
             if (geocodes.Count > 0)
             {
                 // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
@@ -684,6 +687,11 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 }
                 else //if we reach here then matchscore is 100 and we return a "Match"
                 {
+                    //PAYTON:PENALTYCODE
+                    if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
+                    {
+                        this.PenaltyCodeResult.city = 1;
+                    }
                     this.MicroMatchStatus = "Match";
                 }
             }
@@ -691,9 +699,18 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 this.MicroMatchStatus = "Non-Match";
             }
+            Dictionary<string, string> scoreResult = new Dictionary<string, string>();
+            var matchedScoreResults = geocodes[0].MatchedFeature.MatchScoreResult.MatchScorePenaltyResults;
+            foreach(var penalty in matchedScoreResults)
+            {                
+                scoreResult.Add(penalty.AddressComponent.ToString(), penalty.PenaltyValue.ToString());
+            }
+
+            this.PenaltyCodeResult.getPenalty(scoreResult);           
+            this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
             return ret;
         }
-
+       
         public double getAverageDistance(string type)
         {
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
@@ -871,6 +888,11 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 }
                 else //if we reach here then matchscore is 100 and we return a "Match"
                 {
+                    //PAYTON:PENALTYCODE
+                    if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
+                    {
+                        this.PenaltyCodeResult.city = 1;
+                    }
                     this.MicroMatchStatus = "Match";
                 }
             }

@@ -145,6 +145,10 @@
     <Content Include="LICENSE.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\AddressProcessing.Core\src\Main\AddressProcessing.Core.Dev.csproj">
+      <Project>{D971C282-ECC4-4C07-A481-5BC862934B96}</Project>
+      <Name>AddressProcessing.Core.Dev</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Common.Core.Addresses\Src\Main\Common.Core.Addresses.Dev.csproj">
       <Project>{29c0949b-4d41-4138-b59b-6de4a6a1774e}</Project>
       <Name>Common.Core.Addresses.Dev</Name>
@@ -167,6 +171,14 @@
       <Project>{8D4887D7-7595-4F08-A1DE-2B8D6FBC220F}</Project>
       <Name>Geocoding.Core.Algorithms.FeatureMatching.MatchedFeature.Dev</Name>
       <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Geocoding.Core.Algorithms.FeatureMatchScorers.MatchScoreResults\src\Main\Geocoding.Core.Algorithms.FeatureMatchScorers.MatchScoreResults.Dev.csproj">
+      <Project>{1b0d73cf-1bf7-41eb-8792-e30319222ad7}</Project>
+      <Name>Geocoding.Core.Algorithms.FeatureMatchScorers.MatchScoreResults.Dev</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Geocoding.Core.Algorithms.PenaltyScoring\src\Main\Geocoding.Core.Algorithms.PenaltyScoring.Dev.csproj">
+      <Project>{dda124f6-c2d0-4023-8e54-e2f4f7ac3bbf}</Project>
+      <Name>Geocoding.Core.Algorithms.PenaltyScoring.Dev</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Geocoding.Core.Configurations\src\Main\Geocoding.Core.Configurations.Dev.csproj">
       <Project>{0D43D32A-C1F4-4D7C-B70B-3B7AE9D8CE03}</Project>
@@ -200,6 +212,10 @@
       <Project>{F4ACB61C-6125-462F-84E8-29A3437823D9}</Project>
       <Name>Geocoding.Core.OutputData.Errors.Dev</Name>
       <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Geocoding.Core.OutputData.WebServices\src\Main\Geocoding.Core.OutputData.WebServices.Dev.csproj">
+      <Project>{9F2D27D0-3BE6-4430-900A-79F3D4308F94}</Project>
+      <Name>Geocoding.Core.OutputData.WebServices.Dev</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Geocoding.Core.OutputData\src\Main\Geocoding.Core.OutputData.Dev.csproj">
       <Project>{ac115040-d3ee-4ab7-a3e5-5842724acc15}</Project>
