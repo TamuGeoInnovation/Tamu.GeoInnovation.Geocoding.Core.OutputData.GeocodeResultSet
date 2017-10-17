@@ -673,6 +673,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                 {
                                     this.MicroMatchStatus = "Match";
                                 }
+                                getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
                             }
                         }
                         else
@@ -874,6 +875,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                 {
                                     this.MicroMatchStatus = "Match";
                                 }
+                                getDistancePenalty(avgDistance);
                             }
                         }
                         else
@@ -901,6 +903,38 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 this.MicroMatchStatus = "Non-Match";
             }
             return ret;
+        }
+
+        public void getDistancePenalty(double avgDistance)
+        {           
+            if (avgDistance <= .00094697 && avgDistance > 0) //5ft
+            {
+                this.PenaltyCodeResult.distance = 1;
+            }
+            else if (avgDistance <= 0.00473485 && avgDistance > .00094697)
+            {
+                this.PenaltyCodeResult.distance = 2;
+            }
+            else if (avgDistance <= 0.0094697 && avgDistance > 0.00473485)
+            {
+                this.PenaltyCodeResult.distance = 3;
+            }
+            else if (avgDistance <= 0.0189394 && avgDistance > 0.0094697)
+            {
+                this.PenaltyCodeResult.distance = 4;
+            }
+            else if (avgDistance <= 0.0473485 && avgDistance > 0.0189394)
+            {
+                this.PenaltyCodeResult.distance = 5;
+            }
+            else if (avgDistance <= 0.094697 && avgDistance > 0.0473485)
+            {
+                this.PenaltyCodeResult.distance = 6;
+            }
+            else if (avgDistance > 0.094697)
+            {
+                this.PenaltyCodeResult.distance = 7;
+            }
         }
     }
 }
