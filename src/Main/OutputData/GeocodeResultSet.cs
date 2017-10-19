@@ -18,6 +18,7 @@ using USC.GISResearchLab.AddressProcessing.Core.Standardizing.StandardizedAddres
 using Tamu.GeoInnovation.Geocoding.Core.Algorithms.PenaltyScoring;
 using USC.GISResearchLab.Geocoding.Core.Algorithms.FeatureMatchScorers.MatchScoreResults;
 
+
 namespace USC.GISResearchLab.Geocoding.Core.OutputData
 {
     public class GeocodeResultSet
@@ -702,16 +703,52 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             }
             Dictionary<string, string> scoreResult = new Dictionary<string, string>();
             var matchedScoreResults = geocodes[0].MatchedFeature.MatchScoreResult.MatchScorePenaltyResults;
-            foreach(var penalty in matchedScoreResults)
-            {                
+            foreach (var penalty in matchedScoreResults)
+            {
                 scoreResult.Add(penalty.AddressComponent.ToString(), penalty.PenaltyValue.ToString());
             }
-
-            this.PenaltyCodeResult.getPenalty(scoreResult);           
+            var pre = scoreResult["PreDirectional"];
+            var post = scoreResult["PostDirectional"];
+            string inputStreet = geocodes[0].InputAddress.PreDirectional + " " + geocodes[0].InputAddress.StreetName + " " + geocodes[0].InputAddress.PostDirectional;
+            string featureStreet = geocodes[0].MatchedFeatureAddress.PreDirectional + " " + geocodes[0].MatchedFeatureAddress.StreetName + " " + geocodes[0].MatchedFeatureAddress.PostDirectional;
+            if (Convert.ToDouble(scoreResult["PreDirectional"]) > 0 || Convert.ToDouble(scoreResult["PostDirectional"]) > 0)
+            {
+                this.PenaltyCodeResult.assignDirectionalPenalty(inputStreet,featureStreet);
+                this.PenaltyCodeResult.assignDirectionalPenalty(geocodes[0].InputAddress.PreDirectional, geocodes[0].MatchedFeatureAddress.PreDirectional, geocodes[0].InputAddress.PostDirectional, geocodes[0].MatchedFeatureAddress.PostDirectional);
+            }
+            getPenaltyCodeInputType(geocodes);
+            this.PenaltyCodeResult.getPenalty(scoreResult);
             this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
             return ret;
         }
-       
+
+        public void getPenaltyCodeInputType(List<IGeocode> geocodes)
+        {
+            if (geocodes[0].ParsedAddress.PostOfficeBoxNumber != "" || geocodes[0].ParsedAddress.PostOfficeBoxType != "")
+            {
+                this.PenaltyCodeResult.inputType = 1;
+            }
+            else if (geocodes[0].ParsedAddress.RuralRouteBoxNumber != "" || geocodes[0].ParsedAddress.RuralRouteBoxType != "" || geocodes[0].ParsedAddress.RuralRouteNumber != "" || geocodes[0].ParsedAddress.RuralRouteType != "")
+            {
+                this.PenaltyCodeResult.inputType = 1;
+            }
+            else if (geocodes[0].ParsedAddress.Number == "" && geocodes[0].ParsedAddress.NumberFractional == "" && geocodes[0].ParsedAddress.Name == "")
+            {
+                if (geocodes[0].ParsedAddress.City == "")
+                {
+                    if (geocodes[0].ParsedAddress.ZIP == "")
+                    {
+                        this.PenaltyCodeResult.inputType = 5;
+                    }
+                    this.PenaltyCodeResult.inputType = 4;
+                }
+                else
+                {
+                    this.PenaltyCodeResult.inputType = 3;
+                }
+            }
+
+        }
         public double getAverageDistance(string type)
         {
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
