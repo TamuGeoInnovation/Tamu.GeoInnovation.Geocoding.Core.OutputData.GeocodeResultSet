@@ -194,8 +194,8 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     {
                                         // do nothing, will revert to hierarchy
                                     }
-                                        // removed DG 2015-06-09 
-                                        // TODO test to see if still needed
+                                    // removed DG 2015-06-09 
+                                    // TODO test to see if still needed
                                     //else if (bestHierarchy.FM_Result.ReferenceDatasetStatistics.ReferenceSourceQueryResultSet.SawCandidate(bestUncertaintyId)) // if the hierarchy found and rejected the uncertainty, go with the hierarchy (choose tiger over USPS tiger/zip)
                                     //{
                                     //    // do nothing, will revert to hierarchy
@@ -296,13 +296,13 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
                     return ret;
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     throw new Exception("Error in MAIN BestGeocodeHierarchyConfidence " + e.InnerException + " and msg: " + e.Message);
                 }
             }
         }
-        
+
 
         #endregion
 
@@ -369,7 +369,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             if (GeocodeCollection.Geocodes.Count > 0)
             {
                 List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
-                ret = geocodes.OrderBy(x => x.GeocodedError.ErrorBounds).ToList();   
+                ret = geocodes.OrderBy(x => x.GeocodedError.ErrorBounds).ToList();
             }
             return ret;
         }
@@ -377,7 +377,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
         public List<IGeocode> SortByHierarchyFeatureType()
         {
-            return GeocodeCollection.GetValidGeocodes();            
+            return GeocodeCollection.GetValidGeocodes();
         }
 
         //PAYTON:MULTITHREADING-SORT Added this as part of multithreading setup - will have every source query here to sort
@@ -390,7 +390,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
 
                 //Ideally we want to use the default order of preferred references here to get the best geocode                 
-                
+
                 //IFeatureSource[] referenceSources = BuildReferenceSources(geocoderConfiguration, geocoderConfiguration.OutputHierarchyConfiguration.FeatureMatchingHierarchyOrdering);
 
                 //DefaultOrderedReferenceSourceTypes
@@ -423,12 +423,12 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 {
 
                     PropertyInfo pi = reference.GetType().GetProperty("Name");
-                    string refTxt = (String)(pi.GetValue(reference, null));                    
+                    string refTxt = (String)(pi.GetValue(reference, null));
                     foreach (var geoRef in geoRefList)
-                    {                        
+                    {
                         if (refTxt.Contains(geoRef.SourceType))
                         {
-                            ret.Add(geoRef);                            
+                            ret.Add(geoRef);
                         }
                     }
                 }
@@ -464,7 +464,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     else //if first address zip is correct then there is no need to test remaining geocodes for better match
                     {
                         ret = geocodes;
-                    }               
+                    }
                 }
                 //if no valid geocodes exist ret needs to add top to be unmatchable
                 else
@@ -476,13 +476,13 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             //GeocodeCollection.Geocodes = ret;
             return ret;
         }
-        
+
         public List<IGeocode> SortByConfidence(List<IGeocode> geocodes)
         {
             List<IGeocode> ret = new List<IGeocode>();
             List<IGeocode> geocodeList = new List<IGeocode>();
-            if (geocodes.Count > 0)            {
-                
+            if (geocodes.Count > 0) {
+
                 int i = 0;
                 try
                 {
@@ -636,10 +636,14 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         //PAYTON:MICROMATCHSTATUS - we need to determine the actual micro match status here - this is just a placeholder
         public bool GetMicroMatchStatus()
         {
-            bool ret = false;            
+            bool ret = false;
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
-            this.PenaltyCodeResult = new PenaltyCodeResult();
+            //PAYTON:PenaltyCode
+            if (geocodes[0].Version >= 4.4)
+            {
+                this.PenaltyCodeResult = new PenaltyCodeResult();
+            }
             if (geocodes.Count > 0)
             {
                 // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
@@ -674,7 +678,10 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                 {
                                     this.MicroMatchStatus = "Match";
                                 }
-                                getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
+                                if (geocodes[0].Version >= 4.4)
+                                {
+                                    getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
+                                }
                             }
                         }
                         else
@@ -690,9 +697,12 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 else //if we reach here then matchscore is 100 and we return a "Match"
                 {
                     //PAYTON:PENALTYCODE
-                    if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
+                    if (geocodes[0].Version >= 4.4)
                     {
-                        this.PenaltyCodeResult.city = 1;
+                        if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
+                        {
+                            this.PenaltyCodeResult.city = "1";
+                        }
                     }
                     this.MicroMatchStatus = "Match";
                 }
@@ -701,55 +711,98 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 this.MicroMatchStatus = "Non-Match";
             }
-            Dictionary<string, string> scoreResult = new Dictionary<string, string>();
-            var matchedScoreResults = geocodes[0].MatchedFeature.MatchScoreResult.MatchScorePenaltyResults;
-            foreach (var penalty in matchedScoreResults)
+            //PAYTON:PenaltyCode - only available in version 4.04 and after
+            if (geocodes[0].Version >= 4.4)
             {
-                scoreResult.Add(penalty.AddressComponent.ToString(), penalty.PenaltyValue.ToString());
+                Dictionary<string, string> scoreResult = new Dictionary<string, string>();
+                var matchedScoreResults = geocodes[0].MatchedFeature.MatchScoreResult.MatchScorePenaltyResults;
+                foreach (var penalty in matchedScoreResults)
+                {
+                    scoreResult.Add(penalty.AddressComponent.ToString(), penalty.PenaltyValue.ToString());
+                }
+                try
+                {
+                    var pre = scoreResult["PreDirectional"];
+                    var post = scoreResult["PostDirectional"];
+                    string inputStreet = geocodes[0].InputAddress.PreDirectional + " " + geocodes[0].InputAddress.StreetName + " " + geocodes[0].InputAddress.PostDirectional;
+                    string featureStreet = geocodes[0].MatchedFeatureAddress.PreDirectional + " " + geocodes[0].MatchedFeatureAddress.StreetName + " " + geocodes[0].MatchedFeatureAddress.PostDirectional;
+                    if (Convert.ToDouble(scoreResult["PreDirectional"]) > 0 || Convert.ToDouble(scoreResult["PostDirectional"]) > 0)
+                    {
+                        //this.PenaltyCodeResult.assignDirectionalPenalty(inputStreet, featureStreet);
+                        this.PenaltyCodeResult.assignDirectionalPenalty(geocodes[0].InputAddress.PreDirectional, geocodes[0].MatchedFeatureAddress.PreDirectional, geocodes[0].InputAddress.PostDirectional, geocodes[0].MatchedFeatureAddress.PostDirectional);
+                    }
+                }
+                catch(Exception e)
+                {
+                    string msg = "error getting scoreResults " + e.Message;
+                }
+                getPenaltyCodeInputType(geocodes);
+                getPenaltyCodeStreetType(geocodes);
+                this.PenaltyCodeResult.assignStreetNamePenalty(geocodes[0].InputAddress.StreetName, geocodes[0].MatchedFeatureAddress.StreetName, geocodes[0].MatchType);
+                this.PenaltyCodeResult.getPenalty(scoreResult);
+                this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
             }
-            var pre = scoreResult["PreDirectional"];
-            var post = scoreResult["PostDirectional"];
-            string inputStreet = geocodes[0].InputAddress.PreDirectional + " " + geocodes[0].InputAddress.StreetName + " " + geocodes[0].InputAddress.PostDirectional;
-            string featureStreet = geocodes[0].MatchedFeatureAddress.PreDirectional + " " + geocodes[0].MatchedFeatureAddress.StreetName + " " + geocodes[0].MatchedFeatureAddress.PostDirectional;
-            if (Convert.ToDouble(scoreResult["PreDirectional"]) > 0 || Convert.ToDouble(scoreResult["PostDirectional"]) > 0)
-            {
-                this.PenaltyCodeResult.assignDirectionalPenalty(inputStreet,featureStreet);
-                this.PenaltyCodeResult.assignDirectionalPenalty(geocodes[0].InputAddress.PreDirectional, geocodes[0].MatchedFeatureAddress.PreDirectional, geocodes[0].InputAddress.PostDirectional, geocodes[0].MatchedFeatureAddress.PostDirectional);
-            }
-            getPenaltyCodeInputType(geocodes);
-            this.PenaltyCodeResult.getPenalty(scoreResult);
-            this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
             return ret;
         }
 
         public void getPenaltyCodeInputType(List<IGeocode> geocodes)
         {
-            if (geocodes[0].ParsedAddress.PostOfficeBoxNumber != "" || geocodes[0].ParsedAddress.PostOfficeBoxType != "")
+            bool hasNumber = (geocodes[0].ParsedAddress.Number != "" && geocodes[0].ParsedAddress.Number != null);
+            bool hasNumberFrac = (geocodes[0].ParsedAddress.NumberFractional != "" && geocodes[0].ParsedAddress.NumberFractional != null);
+            bool hasName = (geocodes[0].ParsedAddress.StreetName != "" && geocodes[0].ParsedAddress.StreetName != null);
+            bool hasCity = geocodes[0].ParsedAddress.HasCity;
+            bool hasZip = (geocodes[0].ParsedAddress.ZIP != "");
+
+
+            if (!hasNumber && !hasNumberFrac && !hasName)
             {
-                this.PenaltyCodeResult.inputType = 1;
-            }
-            else if (geocodes[0].ParsedAddress.RuralRouteBoxNumber != "" || geocodes[0].ParsedAddress.RuralRouteBoxType != "" || geocodes[0].ParsedAddress.RuralRouteNumber != "" || geocodes[0].ParsedAddress.RuralRouteType != "")
-            {
-                this.PenaltyCodeResult.inputType = 1;
-            }
-            else if (geocodes[0].ParsedAddress.Number == "" && geocodes[0].ParsedAddress.NumberFractional == "" && geocodes[0].ParsedAddress.Name == "")
-            {
-                if (geocodes[0].ParsedAddress.City == "")
+                if (hasCity)
                 {
-                    if (geocodes[0].ParsedAddress.ZIP == "")
+                    if (!hasZip)
                     {
-                        this.PenaltyCodeResult.inputType = 5;
+                        this.PenaltyCodeResult.inputType = "3";
                     }
-                    this.PenaltyCodeResult.inputType = 4;
+                    else
+                    {
+                        this.PenaltyCodeResult.inputType = "4";
+                    }
                 }
                 else
                 {
-                    this.PenaltyCodeResult.inputType = 3;
+                    this.PenaltyCodeResult.inputType = "5";
                 }
             }
-
+            else if (!hasNumber && !hasNumberFrac && hasName)
+            {
+                this.PenaltyCodeResult.inputType = "1";
+            }
+            else if ((hasNumber || hasNumberFrac) && !hasName)
+            {
+                this.PenaltyCodeResult.inputType = "2";
+            }
         }
-        public double getAverageDistance(string type)
+
+        public void getPenaltyCodeStreetType(List<IGeocode> geocodes)
+        {
+            if (geocodes[0].ParsedAddress.HasPostOfficeBoxNumber || geocodes[0].ParsedAddress.HasPostOfficeBox)
+            {
+                this.PenaltyCodeResult.streetType = "1";
+            }
+            else if (geocodes[0].ParsedAddress.HasRuralRoute || geocodes[0].ParsedAddress.HasRuralRouteBox || geocodes[0].ParsedAddress.HasRuralRouteBoxNumber || geocodes[0].ParsedAddress.HasRuralRouteNumber)
+            {
+                this.PenaltyCodeResult.streetType = "2";
+            }
+            else if (geocodes[0].ParsedAddress.HasHighwayContractRoute || geocodes[0].ParsedAddress.HasHighwayContractRouteBox || geocodes[0].ParsedAddress.HasHighwayContractRouteBoxNumber || geocodes[0].ParsedAddress.HasHighwayContractRouteNumber)
+            {
+                this.PenaltyCodeResult.streetType = "3";
+            }
+            else if (geocodes[0].ParsedAddress.HasStarRoute || geocodes[0].ParsedAddress.HasStarRouteBox || geocodes[0].ParsedAddress.HasStarRouteBoxNumber || geocodes[0].ParsedAddress.HasStarRouteNumber)
+            {
+                this.PenaltyCodeResult.streetType = "4";
+            }
+        }
+
+    public double getAverageDistance(string type)
         {
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
@@ -930,7 +983,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     //PAYTON:PENALTYCODE
                     if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
                     {
-                        this.PenaltyCodeResult.city = 1;
+                        this.PenaltyCodeResult.city = "1";
                     }
                     this.MicroMatchStatus = "Match";
                 }
@@ -943,34 +996,34 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         }
 
         public void getDistancePenalty(double avgDistance)
-        {           
-            if (avgDistance <= .00094697 && avgDistance > 0) //5ft
+        {
+            if (avgDistance <= .00094697 && avgDistance > 0) //5ft or less
             {
-                this.PenaltyCodeResult.distance = 1;
+                this.PenaltyCodeResult.distance = "-";
             }
-            else if (avgDistance <= 0.00473485 && avgDistance > .00094697)
+            else if (avgDistance <= 0.00473485 && avgDistance > .00094697) //+5ft-25ft
             {
-                this.PenaltyCodeResult.distance = 2;
+                this.PenaltyCodeResult.distance = "1";
             }
-            else if (avgDistance <= 0.0094697 && avgDistance > 0.00473485)
+            else if (avgDistance <= 0.0094697 && avgDistance > 0.00473485) //+25ft-50ft
             {
-                this.PenaltyCodeResult.distance = 3;
+                this.PenaltyCodeResult.distance = "2";
             }
-            else if (avgDistance <= 0.0189394 && avgDistance > 0.0094697)
+            else if (avgDistance <= 0.0189394 && avgDistance > 0.0094697) //+50ft-100ft
             {
-                this.PenaltyCodeResult.distance = 4;
+                this.PenaltyCodeResult.distance = "3";
             }
-            else if (avgDistance <= 0.0473485 && avgDistance > 0.0189394)
+            else if (avgDistance <= 0.0473485 && avgDistance > 0.0189394) //+100ft-250ft
             {
-                this.PenaltyCodeResult.distance = 5;
+                this.PenaltyCodeResult.distance = "4";
             }
-            else if (avgDistance <= 0.094697 && avgDistance > 0.0473485)
+            else if (avgDistance <= 0.094697 && avgDistance > 0.0473485) //+250ft-500ft
             {
-                this.PenaltyCodeResult.distance = 6;
+                this.PenaltyCodeResult.distance = "5";
             }
-            else if (avgDistance > 0.094697)
+            else if (avgDistance > 0.094697)  //+500ft
             {
-                this.PenaltyCodeResult.distance = 7;
+                this.PenaltyCodeResult.distance = "6";
             }
         }
     }
