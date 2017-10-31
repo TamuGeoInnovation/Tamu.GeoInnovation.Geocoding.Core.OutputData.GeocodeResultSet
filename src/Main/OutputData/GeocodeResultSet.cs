@@ -398,11 +398,49 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
                 ret = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
                 this.GeocodeCollection.Geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore);
-            }
-            //if no valid geocodes exist ret needs to add top to be unmatchable
-            else
-            {
-                ret.Add(GeocodeCollection.Geocodes[0]);
+
+                //PAYTON:MULTITHREADING-sort at this point we have it sorted based on Preferred reference. We still need to select the 'best' geocode
+                //PAYTON:v4.03 Updating to return lower level street match if the zipcode matches input zipcode
+                if (geocodes.Count > 0)
+                {
+                    if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP)
+                    {
+                        double score = ret[0].MatchScore;
+                        int i = 0;
+                        try
+                        {
+                            foreach (IGeocode g in ret)
+                            {
+                                if (!object.ReferenceEquals(null, g))
+                                {
+                                    //Payton:v4.04 added logic to account for reference sources not having a zip but matchscore indicates good match
+                                    if ((g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score) || g.MatchedFeatureAddress.ZIP == "" && g.MatchScore>90)
+                                    //if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
+                                    {
+                                        ret.RemoveAt(i);
+                                        ret.Insert(0, g);
+                                        break;
+                                    }
+                                }
+                                i++;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            throw new Exception("BOO in checkForBetterMatch " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
+                        }
+                    }
+                    else //if first address zip is correct then there is no need to test remaining geocodes for better match
+                    {
+                        ret = geocodes;
+                    }
+
+                }
+                //if no valid geocodes exist ret needs to add top to be unmatchable
+                else
+                {
+                    ret.Add(GeocodeCollection.Geocodes[0]);
+                }
             }
             GeocodeCollection.Geocodes = ret;
             return ret;
@@ -446,7 +484,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                             {
                                 if (!object.ReferenceEquals(null, g))
                                 {
-                                    if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
+                                    //Payton:v4.04 added logic to account for reference sources not having a zip but matchscore indicates good match
+                                    if ((g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score) || g.MatchedFeatureAddress.ZIP == "" && g.MatchScore > 90)
+                                    //if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
                                     {
                                         ret.RemoveAt(i);
                                         ret.Insert(0, g);
@@ -519,7 +559,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                             {
                                 if (!object.ReferenceEquals(null, g))
                                 {
-                                    if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
+                                    //Payton:v4.04 added logic to account for reference sources not having a zip but matchscore indicates good match
+                                    if ((g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score) || g.MatchedFeatureAddress.ZIP == "" && g.MatchScore > 90)
+                                    //if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
                                     {
                                         ret.RemoveAt(i);
                                         ret.Insert(0, g);
@@ -607,7 +649,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                             {
                                 if (!object.ReferenceEquals(null, g))
                                 {
-                                    if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
+                                    //Payton:v4.04 added logic to account for reference sources not having a zip but matchscore indicates good match
+                                    if ((g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score) || g.MatchedFeatureAddress.ZIP == "" && g.MatchScore > 90)
+                                    //if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
                                     {
                                         ret.RemoveAt(i);
                                         ret.Insert(0, g);
@@ -639,109 +683,133 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             bool ret = false;
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
-            //PAYTON:PenaltyCode
-            if (geocodes[0].Version >= 4.4)
-            {
-                this.PenaltyCodeResult = new PenaltyCodeResult();
-            }
-            if (geocodes.Count > 0)
-            {
-                // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
-                //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
-                if (geocodes[0].MatchScore < 100)
+            if (geocodes != null)            {
+                
+                if (geocodes.Count > 0)
                 {
-                    if (geocodes[0].MatchScore > 84)
+                    //PAYTON:PenaltyCode
+                    if (geocodes[0].Version >= 4.4)
                     {
-                        if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
+                        this.PenaltyCodeResult = new PenaltyCodeResult();
+                    }
+                    // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
+                    //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+                    if (geocodes[0].MatchScore < 100)
+                    {
+                        if (geocodes[0].MatchScore > 84)
                         {
-                            if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 97)
+                            if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                             {
-                                this.MicroMatchStatus = "Match";
+                                if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 97)
+                                {
+                                    this.MicroMatchStatus = "Match";
+                                }
+                                else
+                                {
+                                    this.MicroMatchStatus = "Review";
+                                    //double avgDistance = getAverageDistance();
+                                    parcelMatches = 0;
+                                    streetMatches = 0;
+                                    double avgParcelDistance = getAverageDistance("parcel");
+                                    double avgStreetDistance = getAverageDistance("street");
+                                    //if (avgDistance < .05 && geocodes.Count > 5 && getCensusMatchStatus())
+                                    //{
+                                    //    this.MicroMatchStatus = "Match";
+                                    //}
+                                    if (avgParcelDistance < .05 && parcelMatches > 1 && getCensusMatchStatus())
+                                    {
+                                        this.MicroMatchStatus = "Match";
+                                    }
+                                    if (parcelMatches == 0 && streetMatches > 1 && avgStreetDistance < .05 && getCensusMatchStatus())
+                                    {
+                                        this.MicroMatchStatus = "Match";
+                                    }
+                                    if (geocodes[0].Version >= 4.4)
+                                    {
+                                        getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
+                                    }
+                                }
                             }
                             else
                             {
                                 this.MicroMatchStatus = "Review";
-                                //double avgDistance = getAverageDistance();
-                                parcelMatches = 0;
-                                streetMatches = 0;
-                                double avgParcelDistance = getAverageDistance("parcel");
-                                double avgStreetDistance = getAverageDistance("street");
-                                //if (avgDistance < .05 && geocodes.Count > 5 && getCensusMatchStatus())
-                                //{
-                                //    this.MicroMatchStatus = "Match";
-                                //}
-                                if (avgParcelDistance < .05 && parcelMatches > 1 && getCensusMatchStatus())
-                                {
-                                    this.MicroMatchStatus = "Match";
-                                }
-                                if (parcelMatches == 0 && streetMatches > 1 && avgStreetDistance < .05 && getCensusMatchStatus())
-                                {
-                                    this.MicroMatchStatus = "Match";
-                                }
-                                if (geocodes[0].Version >= 4.4)
-                                {
-                                    getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
-                                }
                             }
                         }
-                        else
+                        else //anything not match or review is returned as non-match
                         {
-                            this.MicroMatchStatus = "Review";
+                            this.MicroMatchStatus = "Non-Match";
                         }
                     }
-                    else //anything not match or review is returned as non-match
+                    else //if we reach here then matchscore is 100 and we return a "Match"
                     {
-                        this.MicroMatchStatus = "Non-Match";
+                        //PAYTON:PENALTYCODE
+                        if (geocodes[0].Version >= 4.4)
+                        {
+                            if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
+                            {
+                                this.PenaltyCodeResult.city = "1";
+                            }
+                        }
+                        this.MicroMatchStatus = "Match";
                     }
                 }
-                else //if we reach here then matchscore is 100 and we return a "Match"
+                else //if no matches were found - return Non-match
                 {
-                    //PAYTON:PENALTYCODE
-                    if (geocodes[0].Version >= 4.4)
+                    this.MicroMatchStatus = "Non-Match";
+                }
+                //PAYTON:PenaltyCode - only available in version 4.04 and after
+                if (geocodes.Count>0 && geocodes[0].Version >= 4.4)
+                {
+
+                    Dictionary<string, string> scoreResult = new Dictionary<string, string>();
+                    var matchedScoreResults = geocodes[0].MatchedFeature.MatchScoreResult.MatchScorePenaltyResults;
+                    foreach (var penalty in matchedScoreResults)
                     {
-                        if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
+                        scoreResult.Add(penalty.AddressComponent.ToString(), penalty.PenaltyValue.ToString());
+                    }
+                    try
+                    {
+                        string pre = "0";
+                        string post = "0";
+                        if (scoreResult.ContainsKey("PreDirectional"))
                         {
-                            this.PenaltyCodeResult.city = "1";
+                            pre = scoreResult["PreDirectional"];
+                        }
+                        if (scoreResult.ContainsKey("PostDirectional"))
+                        {
+                            post = scoreResult["PostDirectional"];
+                        }                       
+                        string inputStreet = geocodes[0].InputAddress.PreDirectional + " " + geocodes[0].InputAddress.StreetName + " " + geocodes[0].InputAddress.PostDirectional;
+                        string featureStreet = geocodes[0].MatchedFeatureAddress.PreDirectional + " " + geocodes[0].MatchedFeatureAddress.StreetName + " " + geocodes[0].MatchedFeatureAddress.PostDirectional;
+                        if (Convert.ToDouble(pre) > 0 || Convert.ToDouble(post) > 0)
+                        {
+                            //this.PenaltyCodeResult.assignDirectionalPenalty(inputStreet, featureStreet);
+                            this.PenaltyCodeResult.assignDirectionalPenalty(geocodes[0].InputAddress.PreDirectional, geocodes[0].MatchedFeatureAddress.PreDirectional, geocodes[0].InputAddress.PostDirectional, geocodes[0].MatchedFeatureAddress.PostDirectional);
                         }
                     }
-                    this.MicroMatchStatus = "Match";
+                    catch (Exception e)
+                    {
+                        string msg = "error getting scoreResults " + e.Message;
+                    }
+                    getPenaltyCodeInputType(geocodes);
+                    getPenaltyCodeStreetType(geocodes);
+                    this.PenaltyCodeResult.assignStreetNamePenalty(geocodes[0].InputAddress.StreetName, geocodes[0].MatchedFeatureAddress.StreetName, geocodes[0].MatchType, geocodes[0].NAACCRGISCoordinateQualityCode);
+                    this.PenaltyCodeResult.getPenalty(scoreResult);
+                    this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
+                }
+                else
+                {
+                    this.PenaltyCodeResult = new PenaltyCodeResult();
+                    this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
                 }
             }
-            else //if no matches were found - return Non-match
+            else
             {
                 this.MicroMatchStatus = "Non-Match";
-            }
-            //PAYTON:PenaltyCode - only available in version 4.04 and after
-            if (geocodes[0].Version >= 4.4)
-            {
-                Dictionary<string, string> scoreResult = new Dictionary<string, string>();
-                var matchedScoreResults = geocodes[0].MatchedFeature.MatchScoreResult.MatchScorePenaltyResults;
-                foreach (var penalty in matchedScoreResults)
-                {
-                    scoreResult.Add(penalty.AddressComponent.ToString(), penalty.PenaltyValue.ToString());
-                }
-                try
-                {
-                    var pre = scoreResult["PreDirectional"];
-                    var post = scoreResult["PostDirectional"];
-                    string inputStreet = geocodes[0].InputAddress.PreDirectional + " " + geocodes[0].InputAddress.StreetName + " " + geocodes[0].InputAddress.PostDirectional;
-                    string featureStreet = geocodes[0].MatchedFeatureAddress.PreDirectional + " " + geocodes[0].MatchedFeatureAddress.StreetName + " " + geocodes[0].MatchedFeatureAddress.PostDirectional;
-                    if (Convert.ToDouble(scoreResult["PreDirectional"]) > 0 || Convert.ToDouble(scoreResult["PostDirectional"]) > 0)
-                    {
-                        //this.PenaltyCodeResult.assignDirectionalPenalty(inputStreet, featureStreet);
-                        this.PenaltyCodeResult.assignDirectionalPenalty(geocodes[0].InputAddress.PreDirectional, geocodes[0].MatchedFeatureAddress.PreDirectional, geocodes[0].InputAddress.PostDirectional, geocodes[0].MatchedFeatureAddress.PostDirectional);
-                    }
-                }
-                catch(Exception e)
-                {
-                    string msg = "error getting scoreResults " + e.Message;
-                }
-                getPenaltyCodeInputType(geocodes);
-                getPenaltyCodeStreetType(geocodes);
-                this.PenaltyCodeResult.assignStreetNamePenalty(geocodes[0].InputAddress.StreetName, geocodes[0].MatchedFeatureAddress.StreetName, geocodes[0].MatchType);
-                this.PenaltyCodeResult.getPenalty(scoreResult);
+                this.PenaltyCodeResult = new PenaltyCodeResult();
                 this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
             }
+            this.GeocodeCollection.Geocodes = geocodes;
             return ret;
         }
 
