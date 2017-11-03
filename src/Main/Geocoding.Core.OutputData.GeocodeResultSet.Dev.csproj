@@ -158,6 +158,10 @@
       <Name>Common.Core.Configurations.Dev</Name>
       <Private>False</Private>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Common.Core.Utils\Src\Main\Common.Core.Utils.Dev.csproj">
+      <Project>{0744A732-A7FE-4658-967D-C5A583EF08E4}</Project>
+      <Name>Common.Core.Utils.Dev</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Common.Core.Web\Src\Main\Common.Core.Web.Dev.csproj">
       <Project>{DEA75FBD-F1B4-4730-B10D-CBE20538DA37}</Project>
       <Name>Common.Core.Web.Dev</Name>

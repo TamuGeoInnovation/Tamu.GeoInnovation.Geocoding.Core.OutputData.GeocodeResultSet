@@ -17,7 +17,7 @@ using System.Reflection;
 using USC.GISResearchLab.AddressProcessing.Core.Standardizing.StandardizedAddresses.Lines.LastLines;
 using Tamu.GeoInnovation.Geocoding.Core.Algorithms.PenaltyScoring;
 using USC.GISResearchLab.Geocoding.Core.Algorithms.FeatureMatchScorers.MatchScoreResults;
-
+using USC.GISResearchLab.Common.Core.TextEncodings.Soundex;
 
 namespace USC.GISResearchLab.Geocoding.Core.OutputData
 {
@@ -741,16 +741,30 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                         }
                     }
                     else //if we reach here then matchscore is 100 and we return a "Match"
+                    {                        
+                        this.MicroMatchStatus = "Match";
+                    }
+                    //PAYTON:PENALTYCODE City                   
+                    if (geocodes[0].Version >= 4.4)
                     {
-                        //PAYTON:PENALTYCODE
-                        if (geocodes[0].Version >= 4.4)
+                        string inputCitySoundex = SoundexEncoder.ComputeEncodingNew(geocodes[0].InputAddress.City);
+                        string featureCitySoundex = SoundexEncoder.ComputeEncodingNew(geocodes[0].MatchedFeatureAddress.City);
+                        if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City)
                         {
-                            if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
+                            if (CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
                             {
                                 this.PenaltyCodeResult.city = "1";
                             }
+                            else if (inputCitySoundex == featureCitySoundex)
+
+                            {
+                                this.PenaltyCodeResult.city = "2";
+                            }
+                            else
+                            {
+                                this.PenaltyCodeResult.city = "3";
+                            }
                         }
-                        this.MicroMatchStatus = "Match";
                     }
                 }
                 else //if no matches were found - return Non-match
