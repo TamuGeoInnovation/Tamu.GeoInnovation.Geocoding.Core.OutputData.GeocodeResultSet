@@ -432,7 +432,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     }
                     else //if first address zip is correct then there is no need to test remaining geocodes for better match
                     {
-                        ret = geocodes;
+                        //do nothing
                     }
 
                 }
@@ -503,7 +503,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     }
                     else //if first address zip is correct then there is no need to test remaining geocodes for better match
                     {
-                        ret = geocodes;
+                        //do nothing
                     }
                 }
                 //if no valid geocodes exist ret needs to add top to be unmatchable
@@ -511,9 +511,11 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 {
                     ret.Add(GeocodeCollection.Geocodes[0]);
                 }
-                //GeocodeCollection.Geocodes = ret;
-            }
-            //GeocodeCollection.Geocodes = ret;
+                if(ret.Count<=0)
+                {
+                    ret.Add(GeocodeCollection.Geocodes[0]);
+                }
+            }           
             return ret;
         }
 
@@ -521,7 +523,8 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         {
             List<IGeocode> ret = new List<IGeocode>();
             List<IGeocode> geocodeList = new List<IGeocode>();
-            if (geocodes.Count > 0) {
+            if (geocodes.Count > 0)
+            {
 
                 int i = 0;
                 try
@@ -547,46 +550,44 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 ret = geocodeList.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
 
                 //PAYTON:v4.03 Updating to return lower level street match if the zipcode matches input zipcode
-                if (geocodes.Count > 0)
+                if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP)
                 {
-                    if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP)
+                    double score = ret[0].MatchScore;
+                    i = 0;
+                    try
                     {
-                        double score = ret[0].MatchScore;
-                        i = 0;
-                        try
+                        foreach (IGeocode g in geocodes)
                         {
-                            foreach (IGeocode g in geocodes)
+                            if (!object.ReferenceEquals(null, g))
                             {
-                                if (!object.ReferenceEquals(null, g))
+                                //Payton:v4.04 added logic to account for reference sources not having a zip but matchscore indicates good match
+                                if ((g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score) || g.MatchedFeatureAddress.ZIP == "" && g.MatchScore > 90)
+                                //if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
                                 {
-                                    //Payton:v4.04 added logic to account for reference sources not having a zip but matchscore indicates good match
-                                    if ((g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score) || g.MatchedFeatureAddress.ZIP == "" && g.MatchScore > 90)
-                                    //if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
-                                    {
-                                        ret.RemoveAt(i);
-                                        ret.Insert(0, g);
-                                        break;
-                                    }
+                                    ret.RemoveAt(i);
+                                    ret.Insert(0, g);
+                                    break;
                                 }
-                                i++;
                             }
-                        }
-                        catch (Exception e)
-                        {
-                            throw new Exception("BOO in getValidGeocodes " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
+                            i++;
                         }
                     }
-                }
-                //if no valid geocodes exist ret needs to add top to be unmatchable
+                    catch (Exception e)
+                    {
+                        throw new Exception("BOO in getValidGeocodes " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
+                    }
+                 }
+                //if zip is the same there is no need to check remaining geocodes
                 else
                 {
-                    ret.Add(GeocodeCollection.Geocodes[0]);
+                    //do nothing
                 }
             }
-            if (ret.Count < 1)
+            //if no valid geocodes exist ret needs to add top to be unmatchable
+            else
             {
-                ret = geocodeList;
-            }
+                ret.Add(GeocodeCollection.Geocodes[0]);
+            }           
             return ret;
         }
 
