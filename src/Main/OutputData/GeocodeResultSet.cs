@@ -748,11 +748,27 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     //PAYTON:PENALTYCODE City                   
                     if (geocodes[0].Version >= 4.4)
                     {
-                        string inputCitySoundex = SoundexEncoder.ComputeEncodingNew(geocodes[0].InputAddress.City);
-                        string featureCitySoundex = SoundexEncoder.ComputeEncodingNew(geocodes[0].MatchedFeatureAddress.City);
-                        if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City)
+
+                        string inputCity = "";
+                        string featureCity = "";
+                        string inputState = "";
+                        if (geocodes[0].InputAddress.City != null)
                         {
-                            if (CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
+                            inputCity = geocodes[0].InputAddress.City;
+                        }
+                        if (geocodes[0].InputAddress.State != null)
+                        {
+                            inputState = geocodes[0].InputAddress.State;
+                        }
+                        if (geocodes[0].MatchedFeatureAddress.City != null)
+                        {
+                            featureCity = geocodes[0].MatchedFeatureAddress.City;
+                        }
+                        string inputCitySoundex = SoundexEncoder.ComputeEncodingNew(inputCity);
+                        string featureCitySoundex = SoundexEncoder.ComputeEncodingNew(featureCity);
+                        if (inputCity.ToUpper() != featureCity.ToUpper())
+                        {
+                            if (CityUtils.isValidAlias(inputCity, featureCity, inputState))
                             {
                                 this.PenaltyCodeResult.city = "1";
                             }
