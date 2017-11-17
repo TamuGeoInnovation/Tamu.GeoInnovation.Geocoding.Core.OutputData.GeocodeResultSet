@@ -748,40 +748,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     //PAYTON:PENALTYCODE City                   
                     if (geocodes[0].Version >= 4.4)
                     {
-
-                        string inputCity = "";
-                        string featureCity = "";
-                        string inputState = "";
-                        if (geocodes[0].InputAddress.City != null)
-                        {
-                            inputCity = geocodes[0].InputAddress.City;
-                        }
-                        if (geocodes[0].InputAddress.State != null)
-                        {
-                            inputState = geocodes[0].InputAddress.State;
-                        }
-                        if (geocodes[0].MatchedFeatureAddress.City != null)
-                        {
-                            featureCity = geocodes[0].MatchedFeatureAddress.City;
-                        }
-                        string inputCitySoundex = SoundexEncoder.ComputeEncodingNew(inputCity);
-                        string featureCitySoundex = SoundexEncoder.ComputeEncodingNew(featureCity);
-                        if (inputCity.ToUpper() != featureCity.ToUpper())
-                        {
-                            if (CityUtils.isValidAlias(inputCity, featureCity, inputState))
-                            {
-                                this.PenaltyCodeResult.city = "1";
-                            }
-                            else if (inputCitySoundex == featureCitySoundex)
-
-                            {
-                                this.PenaltyCodeResult.city = "2";
-                            }
-                            else
-                            {
-                                this.PenaltyCodeResult.city = "3";
-                            }
-                        }
+                        assignPenaltyCode(geocodes);
                     }
                 }
                 else //if no matches were found - return Non-match
@@ -791,44 +758,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 //PAYTON:PenaltyCode - only available in version 4.04 and after
                 if (geocodes.Count>0 && geocodes[0].Version >= 4.4)
                 {
-
-                    Dictionary<string, string> scoreResult = new Dictionary<string, string>();
-                    var matchedScoreResults = geocodes[0].MatchedFeature.MatchScoreResult.MatchScorePenaltyResults;
-                    foreach (var penalty in matchedScoreResults)
-                    {
-                        scoreResult.Add(penalty.AddressComponent.ToString(), penalty.PenaltyValue.ToString());
-                    }
-                    try
-                    {
-                        string pre = "0";
-                        string post = "0";
-                        if (scoreResult.ContainsKey("PreDirectional"))
-                        {
-                            pre = scoreResult["PreDirectional"];
-                        }
-                        if (scoreResult.ContainsKey("PostDirectional"))
-                        {
-                            post = scoreResult["PostDirectional"];
-                        }                       
-                        string inputStreet = geocodes[0].InputAddress.PreDirectional + " " + geocodes[0].InputAddress.StreetName + " " + geocodes[0].InputAddress.PostDirectional;
-                        string featureStreet = geocodes[0].MatchedFeatureAddress.PreDirectional + " " + geocodes[0].MatchedFeatureAddress.StreetName + " " + geocodes[0].MatchedFeatureAddress.PostDirectional;
-                        if (Convert.ToDouble(pre) > 0 || Convert.ToDouble(post) > 0)
-                        {
-                            //this.PenaltyCodeResult.assignDirectionalPenalty(inputStreet, featureStreet);
-                            this.PenaltyCodeResult.assignDirectionalPenalty(geocodes[0].InputAddress.PreDirectional, geocodes[0].MatchedFeatureAddress.PreDirectional, geocodes[0].InputAddress.PostDirectional, geocodes[0].MatchedFeatureAddress.PostDirectional);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        string msg = "error getting scoreResults " + e.Message;
-                    }
-                    getPenaltyCodeInputType(geocodes);
-                    getPenaltyCodeStreetType(geocodes);
-                    this.PenaltyCodeResult.assignStreetNamePenalty(geocodes[0].InputAddress.StreetName, geocodes[0].MatchedFeatureAddress.StreetName, geocodes[0].MatchType, geocodes[0].NAACCRGISCoordinateQualityCode);
-                    this.PenaltyCodeResult.getPenalty(scoreResult);
-                    this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
+                 //penalty already assigned   
                 }
-                else
+                else //need to set empty penalty to prevent null here if not already assigned
                 {
                     this.PenaltyCodeResult = new PenaltyCodeResult();
                     this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
@@ -844,6 +776,92 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             return ret;
         }
 
+        public void assignPenaltyCode(List<IGeocode> geocodes)
+        {
+
+            string inputCity = "";
+            string featureCity = "";
+            string inputState = "";
+            if (geocodes[0].InputAddress.City != null)
+            {
+                inputCity = geocodes[0].InputAddress.City;
+            }
+            if (geocodes[0].InputAddress.State != null)
+            {
+                inputState = geocodes[0].InputAddress.State;
+            }
+            if (geocodes[0].MatchedFeatureAddress.City != null)
+            {
+                featureCity = geocodes[0].MatchedFeatureAddress.City;
+            }
+            string inputCitySoundex = SoundexEncoder.ComputeEncodingNew(inputCity);
+            string featureCitySoundex = SoundexEncoder.ComputeEncodingNew(featureCity);
+            if (inputCity.ToUpper() != featureCity.ToUpper())
+            {
+                if (CityUtils.isValidAlias(inputCity, featureCity, inputState))
+                {
+                    this.PenaltyCodeResult.city = "1";
+                }
+                else if (inputCitySoundex == featureCitySoundex)
+
+                {
+                    this.PenaltyCodeResult.city = "2";
+                }
+                else
+                {
+                    this.PenaltyCodeResult.city = "3";
+                }
+            }
+            Dictionary<string, string> scoreResult = new Dictionary<string, string>();
+            var matchedScoreResults = new List<MatchScorePenaltyResult>();
+            if (geocodes[0].MatchedFeature.MatchScoreResult != null)
+            {
+                matchedScoreResults = geocodes[0].MatchedFeature.MatchScoreResult.MatchScorePenaltyResults;
+            }
+            foreach (var penalty in matchedScoreResults)
+            {
+                scoreResult.Add(penalty.AddressComponent.ToString(), penalty.PenaltyValue.ToString());
+            }
+            try
+            {
+                string pre = "0";
+                string post = "0";
+                if (scoreResult.ContainsKey("PreDirectional"))
+                {
+                    pre = scoreResult["PreDirectional"];
+                }
+                if (scoreResult.ContainsKey("PostDirectional"))
+                {
+                    post = scoreResult["PostDirectional"];
+                }
+                string inputStreet = geocodes[0].InputAddress.PreDirectional + " " + geocodes[0].InputAddress.StreetName + " " + geocodes[0].InputAddress.PostDirectional;
+                string featureStreet = geocodes[0].MatchedFeatureAddress.PreDirectional + " " + geocodes[0].MatchedFeatureAddress.StreetName + " " + geocodes[0].MatchedFeatureAddress.PostDirectional;
+                if (Convert.ToDouble(pre) > 0 || Convert.ToDouble(post) > 0)
+                {
+                    //this.PenaltyCodeResult.assignDirectionalPenalty(inputStreet, featureStreet);
+                    this.PenaltyCodeResult.assignDirectionalPenalty(geocodes[0].InputAddress.PreDirectional, geocodes[0].MatchedFeatureAddress.PreDirectional, geocodes[0].InputAddress.PostDirectional, geocodes[0].MatchedFeatureAddress.PostDirectional);
+                }
+            }
+            catch (Exception e)
+            {
+                string msg = "error getting scoreResults " + e.Message;
+            }
+            getPenaltyCodeInputType(geocodes);
+            getPenaltyCodeStreetType(geocodes);
+            string featStreet = "";
+            string inStreet = "";
+            if(geocodes[0].MatchedFeatureAddress.StreetName != null)
+            {
+                featStreet = geocodes[0].MatchedFeatureAddress.StreetName;
+            }
+            if (geocodes[0].InputAddress.StreetName != null)
+            {
+                inStreet = geocodes[0].InputAddress.StreetName;
+            }
+            this.PenaltyCodeResult.assignStreetNamePenalty(inStreet, featStreet, geocodes[0].MatchType, geocodes[0].NAACCRGISCoordinateQualityCode);
+            this.PenaltyCodeResult.getPenalty(scoreResult);
+            this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
+        }
         public void getPenaltyCodeInputType(List<IGeocode> geocodes)
         {
             bool hasNumber = (geocodes[0].ParsedAddress.Number != "" && geocodes[0].ParsedAddress.Number != null);
