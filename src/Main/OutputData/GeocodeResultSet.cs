@@ -235,10 +235,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
 
                 try
-                {
-
+                {                     
                     IGeocode ret = null;
-
+                    IGeocode bestHierarchy = BestGeocodeHierarchyFeatureType;
                     List<IGeocode> tempList = new List<IGeocode>();
                     List<IGeocode> geocodes = new List<IGeocode>();
                     if (GeocodeCollection.Geocodes.Count > 0)
@@ -285,10 +284,14 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                             }
                         }
                     }
+                    else
+                    {
+                        
+                    }
 
                     if (ret == null)
                     {
-                        ret = new Geocode(2.94);
+                        ret = bestHierarchy;
                     }
 
                     ret.TotalTimeTaken = TimeTaken;
@@ -822,6 +825,8 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 scoreResult.Add(penalty.AddressComponent.ToString(), penalty.PenaltyValue.ToString());
             }
+            string inputStreet = "";
+            string featureStreet = "";
             try
             {
                 string pre = "0";
@@ -834,90 +839,94 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 {
                     post = scoreResult["PostDirectional"];
                 }
-                string inputStreet = geocodes[0].InputAddress.PreDirectional + " " + geocodes[0].InputAddress.StreetName + " " + geocodes[0].InputAddress.PostDirectional;
-                string featureStreet = geocodes[0].MatchedFeatureAddress.PreDirectional + " " + geocodes[0].MatchedFeatureAddress.StreetName + " " + geocodes[0].MatchedFeatureAddress.PostDirectional;
+                if(geocodes[0].InputAddress != null)
+                {
+
+                }
+                if(geocodes[0].InputAddress != null)
+                {
+                    inputStreet = geocodes[0].InputAddress.PreDirectional + " " + geocodes[0].InputAddress.StreetName + " " + geocodes[0].InputAddress.PostDirectional;
+                }
+                if(geocodes[0].MatchedFeatureAddress != null)
+                {
+                    featureStreet = geocodes[0].MatchedFeatureAddress.PreDirectional + " " + geocodes[0].MatchedFeatureAddress.StreetName + " " + geocodes[0].MatchedFeatureAddress.PostDirectional;
+                }                
                 if (Convert.ToDouble(pre) > 0 || Convert.ToDouble(post) > 0)
                 {
-                    //this.PenaltyCodeResult.assignDirectionalPenalty(inputStreet, featureStreet);
-                    this.PenaltyCodeResult.assignDirectionalPenalty(geocodes[0].InputAddress.PreDirectional, geocodes[0].MatchedFeatureAddress.PreDirectional, geocodes[0].InputAddress.PostDirectional, geocodes[0].MatchedFeatureAddress.PostDirectional);
+                    this.PenaltyCodeResult.assignDirectionalPenalty(inputStreet, featureStreet);
+                    //this.PenaltyCodeResult.assignDirectionalPenalty(geocodes[0].InputAddress.PreDirectional, geocodes[0].MatchedFeatureAddress.PreDirectional, geocodes[0].InputAddress.PostDirectional, geocodes[0].MatchedFeatureAddress.PostDirectional);
                 }
             }
             catch (Exception e)
             {
                 string msg = "error getting scoreResults " + e.Message;
             }
-            getPenaltyCodeInputType(geocodes);
-            getPenaltyCodeStreetType(geocodes);
-            string featStreet = "";
-            string inStreet = "";
-            if(geocodes[0].MatchedFeatureAddress.StreetName != null)
-            {
-                featStreet = geocodes[0].MatchedFeatureAddress.StreetName;
-            }
-            if (geocodes[0].InputAddress.StreetName != null)
-            {
-                inStreet = geocodes[0].InputAddress.StreetName;
-            }
-            this.PenaltyCodeResult.assignStreetNamePenalty(inStreet, featStreet, geocodes[0].MatchType, geocodes[0].NAACCRGISCoordinateQualityCode);
-            this.PenaltyCodeResult.getPenalty(scoreResult);
-            this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
+            //getPenaltyCodeInputType(geocodes);
+            //this.PenaltyCodeResult.inputType = this.PenaltyCodeResult.getPenaltyCodeInputType(geocodes[0].ParsedAddress.Number, geocodes[0].ParsedAddress.NumberFractional, geocodes[0].ParsedAddress.Name, geocodes[0].ParsedAddress.City, geocodes[0].ParsedAddress.ZIP);
+            //getPenaltyCodeStreetType(geocodes);
+            //this.PenaltyCodeResult.streetType = this.PenaltyCodeResult.getPenaltyCodeStreetType(geocodes[0].ParsedAddress.HasPostOfficeBoxNumber, geocodes[0].ParsedAddress.HasPostOfficeBox, geocodes[0].ParsedAddress.HasRuralRoute, geocodes[0].ParsedAddress.HasRuralRouteBox,
+            //    geocodes[0].ParsedAddress.HasRuralRouteBoxNumber, geocodes[0].ParsedAddress.HasRuralRouteNumber, geocodes[0].ParsedAddress.HasHighwayContractRoute, geocodes[0].ParsedAddress.HasHighwayContractRouteBox,
+            //    geocodes[0].ParsedAddress.HasHighwayContractRouteBoxNumber, geocodes[0].ParsedAddress.HasHighwayContractRouteNumber, geocodes[0].ParsedAddress.HasStarRoute, geocodes[0].ParsedAddress.HasStarRouteBox, geocodes[0].ParsedAddress.HasStarRouteBoxNumber, geocodes[0].ParsedAddress.HasStarRouteNumber);     
+            //this.PenaltyCodeResult.assignStreetNamePenalty(inputStreet, featureStreet, geocodes[0].MatchType, geocodes[0].NAACCRGISCoordinateQualityCode);
+            //this.PenaltyCodeResult.getPenalty(scoreResult);
+            //this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
         }
-        public void getPenaltyCodeInputType(List<IGeocode> geocodes)
-        {
-            bool hasNumber = (geocodes[0].ParsedAddress.Number != "" && geocodes[0].ParsedAddress.Number != null);
-            bool hasNumberFrac = (geocodes[0].ParsedAddress.NumberFractional != "" && geocodes[0].ParsedAddress.NumberFractional != null);
-            bool hasName = (geocodes[0].ParsedAddress.StreetName != "" && geocodes[0].ParsedAddress.StreetName != null);
-            bool hasCity = geocodes[0].ParsedAddress.HasCity;
-            bool hasZip = (geocodes[0].ParsedAddress.ZIP != "");
+        //public void getPenaltyCodeInputType(List<IGeocode> geocodes)
+        //{
+        //    bool hasNumber = (geocodes[0].ParsedAddress.Number != "" && geocodes[0].ParsedAddress.Number != null);
+        //    bool hasNumberFrac = (geocodes[0].ParsedAddress.NumberFractional != "" && geocodes[0].ParsedAddress.NumberFractional != null);
+        //    bool hasName = (geocodes[0].ParsedAddress.StreetName != "" && geocodes[0].ParsedAddress.StreetName != null);
+        //    bool hasCity = geocodes[0].ParsedAddress.HasCity;
+        //    bool hasZip = (geocodes[0].ParsedAddress.ZIP != "");
 
 
-            if (!hasNumber && !hasNumberFrac && !hasName)
-            {
-                if (hasCity)
-                {
-                    if (!hasZip)
-                    {
-                        this.PenaltyCodeResult.inputType = "3";
-                    }
-                    else
-                    {
-                        this.PenaltyCodeResult.inputType = "4";
-                    }
-                }
-                else
-                {
-                    this.PenaltyCodeResult.inputType = "5";
-                }
-            }
-            else if (!hasNumber && !hasNumberFrac && hasName)
-            {
-                this.PenaltyCodeResult.inputType = "1";
-            }
-            else if ((hasNumber || hasNumberFrac) && !hasName)
-            {
-                this.PenaltyCodeResult.inputType = "2";
-            }
-        }
+        //    if (!hasNumber && !hasNumberFrac && !hasName)
+        //    {
+        //        if (hasCity)
+        //        {
+        //            if (!hasZip)
+        //            {
+        //                this.PenaltyCodeResult.inputType = "3";
+        //            }
+        //            else
+        //            {
+        //                this.PenaltyCodeResult.inputType = "4";
+        //            }
+        //        }
+        //        else
+        //        {
+        //            this.PenaltyCodeResult.inputType = "5";
+        //        }
+        //    }
+        //    else if (!hasNumber && !hasNumberFrac && hasName)
+        //    {
+        //        this.PenaltyCodeResult.inputType = "1";
+        //    }
+        //    else if ((hasNumber || hasNumberFrac) && !hasName)
+        //    {
+        //        this.PenaltyCodeResult.inputType = "2";
+        //    }
+        //}
 
-        public void getPenaltyCodeStreetType(List<IGeocode> geocodes)
-        {
-            if (geocodes[0].ParsedAddress.HasPostOfficeBoxNumber || geocodes[0].ParsedAddress.HasPostOfficeBox)
-            {
-                this.PenaltyCodeResult.streetType = "1";
-            }
-            else if (geocodes[0].ParsedAddress.HasRuralRoute || geocodes[0].ParsedAddress.HasRuralRouteBox || geocodes[0].ParsedAddress.HasRuralRouteBoxNumber || geocodes[0].ParsedAddress.HasRuralRouteNumber)
-            {
-                this.PenaltyCodeResult.streetType = "2";
-            }
-            else if (geocodes[0].ParsedAddress.HasHighwayContractRoute || geocodes[0].ParsedAddress.HasHighwayContractRouteBox || geocodes[0].ParsedAddress.HasHighwayContractRouteBoxNumber || geocodes[0].ParsedAddress.HasHighwayContractRouteNumber)
-            {
-                this.PenaltyCodeResult.streetType = "3";
-            }
-            else if (geocodes[0].ParsedAddress.HasStarRoute || geocodes[0].ParsedAddress.HasStarRouteBox || geocodes[0].ParsedAddress.HasStarRouteBoxNumber || geocodes[0].ParsedAddress.HasStarRouteNumber)
-            {
-                this.PenaltyCodeResult.streetType = "4";
-            }
-        }
+        //public void getPenaltyCodeStreetType(List<IGeocode> geocodes)
+        //{
+        //    if (geocodes[0].ParsedAddress.HasPostOfficeBoxNumber || geocodes[0].ParsedAddress.HasPostOfficeBox)
+        //    {
+        //        this.PenaltyCodeResult.streetType = "1";
+        //    }
+        //    else if (geocodes[0].ParsedAddress.HasRuralRoute || geocodes[0].ParsedAddress.HasRuralRouteBox || geocodes[0].ParsedAddress.HasRuralRouteBoxNumber || geocodes[0].ParsedAddress.HasRuralRouteNumber)
+        //    {
+        //        this.PenaltyCodeResult.streetType = "2";
+        //    }
+        //    else if (geocodes[0].ParsedAddress.HasHighwayContractRoute || geocodes[0].ParsedAddress.HasHighwayContractRouteBox || geocodes[0].ParsedAddress.HasHighwayContractRouteBoxNumber || geocodes[0].ParsedAddress.HasHighwayContractRouteNumber)
+        //    {
+        //        this.PenaltyCodeResult.streetType = "3";
+        //    }
+        //    else if (geocodes[0].ParsedAddress.HasStarRoute || geocodes[0].ParsedAddress.HasStarRouteBox || geocodes[0].ParsedAddress.HasStarRouteBoxNumber || geocodes[0].ParsedAddress.HasStarRouteNumber)
+        //    {
+        //        this.PenaltyCodeResult.streetType = "4";
+        //    }
+        //}
 
     public double getAverageDistance(string type)
         {
