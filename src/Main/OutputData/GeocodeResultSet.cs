@@ -18,6 +18,9 @@ using USC.GISResearchLab.AddressProcessing.Core.Standardizing.StandardizedAddres
 using Tamu.GeoInnovation.Geocoding.Core.Algorithms.PenaltyScoring;
 using USC.GISResearchLab.Geocoding.Core.Algorithms.FeatureMatchScorers.MatchScoreResults;
 using USC.GISResearchLab.Common.Core.TextEncodings.Soundex;
+using USC.GISResearchLab.Common.Core.Geocoders.GeocodingQueries.Options;
+using USC.GISResearchLab.Common.Core.JSON;
+using TAMU.GeoInnovation.PointIntersectors.Census.OutputData.CensusRecords;
 
 namespace USC.GISResearchLab.Geocoding.Core.OutputData
 {
@@ -1151,6 +1154,401 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 this.PenaltyCodeResult.distance = "6";
             }
+        }
+
+        public static string ToGeoJSONGeocodeCollection(List<IGeocode> o)
+        {
+            StringBuilder ret = new StringBuilder();
+            ret.Append("{\n");
+            ret.Append("\"OutputGeocodes\" :\n");
+            ret.Append("[");
+            try
+            {
+                int count = o.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    if (i > 0)
+                    {
+                        ret.Append("{ OutputGeocode" + i.ToString() + "\" : { ");
+                        foreach (var prop in o[i].GetType().GetProperties())
+                        {
+                            var name = prop.Name;
+                            ret.Append(name + "\" : \"");
+                            var value = prop.GetValue(o[i], null);
+
+                            if (value != null)
+                            {
+                                var valType = value.GetType();
+                                if (valType.Name != "String" && valType.Name != "Double" && valType.Name != "Boolean" && valType.Name != "Int32" && valType.Name != "NAACCRGISCoordinateQualityType" && valType.Name != "CensusTractCertaintyType" && valType.Name != "InterpolationType" && valType.Name != "InterpolationSubType" && valType.Name != "FeatureMatchingSelectionMethod")
+                                {
+                                    var tempValue = value.GetType().GetProperties();
+                                    var tempFields = value.GetType().GetFields();
+                                    ret.Append("{ ");
+                                    foreach (var val in value.GetType().GetProperties())
+                                    {
+                                        var tempName = val.Name;
+                                        ret.Append("\"" + name + "\" : \"");
+                                        var tempVal = val.GetValue(value);
+                                        ret.Append(value.ToString() + ",");
+                                    }
+                                    ret.Append("} ");
+                                }
+                                else
+                                {
+                                    ret.Append(value.ToString() + ",");
+                                }
+                            }
+                            else
+                            {
+                                ret.Append("" + "\",");
+                            }
+                        }
+                        ret.Append("},");
+                        //ret.Append(o[i]);
+
+                    }
+                }
+                ret.Append("]}");
+                //Type myType = o.GetType();
+                //IList<PropertyInfo> props = new List<PropertyInfo>(myType.GetProperties());
+                //var listparams = o.GetType().GetProperties();
+                //foreach (var prop in o.GetType().GetProperties())
+                //{
+                //    var name = prop.Name;
+                //    var value = prop.GetValue(o, null);
+                //}
+            }
+            catch (Exception e)
+            {
+                ret.Append("Error: " + e.Message);
+            }
+
+            ret.Append("] }");
+
+
+            return ret.ToString();
+        }
+        public static String WriteAsJsonStream(GeocodeResultSet webServiceGeocodeQueryResults, BatchOptions args, bool verbose)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("{");
+
+            //Input Address Info
+            sb.Append("\"InputAddress\" :");
+            sb.Append("{");
+            sb.Append("\"Street\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.NonParsedOriginalStreetAddress.NonParsedStreetAddress)).Append("\",");
+            sb.Append("\"City\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.NonParsedOriginalStreetAddress.City)).Append("\",");
+            sb.Append("\"State\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.NonParsedOriginalStreetAddress.State)).Append("\",");
+            sb.Append("\"Zip\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.ZIP)).Append("\"");
+            sb.Append("},");
+
+            //Parsed Address Info
+            sb.Append("\"ParsedAddress\" :");
+            sb.Append("{");
+            sb.Append("\"Number\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.Number)).Append("\",");
+            sb.Append("\"NumberFractional\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.NumberFractional)).Append("\",");
+            sb.Append("\"PreDirectional\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.PreDirectional)).Append("\",");
+            sb.Append("\"PreQualifier\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.PreQualifier)).Append("\",");
+            sb.Append("\"PreType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.PreType)).Append("\",");
+            sb.Append("\"PreArticle\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.PreArticle)).Append("\",");
+            sb.Append("\"Name\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.StreetName)).Append("\",");
+
+            sb.Append("\"PostArticle\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.PostArticle)).Append("\",");
+            sb.Append("\"PostQualifier\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.PostQualifier)).Append("\",");
+            sb.Append("\"Suffix\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.Suffix)).Append("\",");
+            sb.Append("\"PostDirectional\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.PostDirectional)).Append("\",");
+            sb.Append("\"SuiteType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.SuiteType)).Append("\",");
+            sb.Append("\"SuiteNumber\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.SuiteNumber)).Append("\",");
+            sb.Append("\"PostOfficeBoxType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.PostOfficeBoxType)).Append("\",");
+            sb.Append("\"PostOfficeBoxNumber\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.PostOfficeBoxNumber)).Append("\",");
+            sb.Append("\"City\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.City)).Append("\",");
+            sb.Append("\"ConsolidatedCity\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.ConsolidatedCity)).Append("\",");
+            sb.Append("\"MinorCivilDivision\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.MinorCivilDivision)).Append("\",");
+            sb.Append("\"CountySubRegion\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.CountySubregion)).Append("\",");
+            sb.Append("\"County\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.County)).Append("\",");
+            sb.Append("\"State\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.State)).Append("\",");
+            sb.Append("\"Zip\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.ZIP)).Append("\",");
+            sb.Append("\"ZipPlus1\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.ZIPPlus1)).Append("\",");
+            sb.Append("\"ZipPlus2\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.ZIPPlus2)).Append("\",");
+            sb.Append("\"ZipPlus3\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.ZIPPlus3)).Append("\",");
+            sb.Append("\"ZipPlus4\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.ZIPPlus4)).Append("\",");
+            sb.Append("\"ZipPlus5\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResults.GeocodeCollection.Geocodes[0].InputAddress.ZIPPlus5)).Append("\"");
+            sb.Append("},");
+
+            //OutputGeocode Info
+            sb.Append("\"OutputGeocodes\" :");
+            sb.Append("[");
+
+            if (webServiceGeocodeQueryResults.GeocodeCollection.Geocodes != null)
+            {
+                if (webServiceGeocodeQueryResults.GeocodeCollection.Geocodes.Count > 0)
+                {
+                    GeocodeCollection validGeocodes = webServiceGeocodeQueryResults.GeocodeCollection;
+                    List<IGeocode> validGeocodes2 = validGeocodes.GetValidGeocodes();
+                    //int geocodeCount = webServiceGeocodeQueryResults.GeocodeCollection.Geocodes.Count;
+                    int geocodeCount = validGeocodes2.Count;
+                    sb.Append("{");
+                    int currentCount = 1;
+                    foreach (Geocode webServiceGeocodeQueryResult in validGeocodes2)
+                    {
+                        //PAYTON:JSON We need to add total record limit here.. having issues when exporting the JSON when total records were greater than 11
+                        if (webServiceGeocodeQueryResult.Valid && currentCount < 11)
+                        {
+                            sb.Append("\"OutputGeocode" + currentCount + "\" :");
+                            sb.Append("{");
+                            sb.Append("\"Latitude\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.Latitude)).Append("\",");
+                            sb.Append("\"Longitude\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.Longitude)).Append("\",");
+                            sb.Append("\"naaccrQualCode\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.NAACCRGISCoordinateQualityCode.ToString())).Append("\",");
+                            sb.Append("\"naaccrQualType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.NAACCRGISCoordinateQualityType.ToString())).Append("\",");
+                            sb.Append("\"MatchType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchType)).Append("\",");
+                            //PAYTON:ALL RETURNS -- these values are not in the geocode collection 
+                            //sb.Append("\"FeatureMatchingResultType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.FeatureMatchingResultType.ToString())).Append("\",");
+                            //sb.Append("\"FeatureMatchingResultCount\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.FeatureMatchingResultCount.ToString())).Append("\",");
+                            sb.Append("\"InterpolationType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.InterpolationType.ToString())).Append("\",");
+                            sb.Append("\"InterpolationSubType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.InterpolationSubType.ToString())).Append("\",");
+                            sb.Append("\"FeatureMatchingGeographyType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.FM_GeographyType.ToString())).Append("\",");
+                            sb.Append("\"MatchScore\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchScore.ToString())).Append("\",");
+                            sb.Append("\"GeocodeQualityType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.GeocodeQualityType.ToString())).Append("\",");
+                            sb.Append("\"RegionSize\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.RegionSize)).Append("\",");
+                            sb.Append("\"RegionSizeUnits\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.RegionSizeUnits)).Append("\",");
+                            sb.Append("\"MatchedLocationType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedLocationType)).Append("\",");
+                            sb.Append("\"FeatureMatchingHierarchy\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.FM_SelectionMethod.ToString())).Append("\",");
+                            if (webServiceGeocodeQueryResult.FM_SelectionNotes != null)
+
+                            {
+                                sb.Append("\"FeatureMatchingHierarchyNotes\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.FM_SelectionNotes.ToString())).Append("\",");
+                            }
+                            else
+                            {
+                                sb.Append("\"FeatureMatchingHierarchyNotes\" : \"").Append(JSONUtils.CleanText("")).Append("\",");
+                            }
+                            if (webServiceGeocodeQueryResult.FM_Notes != null)
+
+                            {
+                                sb.Append("\"FeatureMatchingResultTypeNotes\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.FM_Notes.ToString())).Append("\",");
+                            }
+                            else
+                            {
+                                sb.Append("\"FeatureMatchingResultTypeNotes\" : \"").Append(JSONUtils.CleanText("")).Append("\",");
+                            }
+                            sb.Append("\"FeatureMatchingResultCount\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.FM_ResultCount.ToString())).Append("\",");
+
+                            if (webServiceGeocodeQueryResult.FM_TieNotes != null)
+
+                            {
+                                sb.Append("\"FeatureMatchingResultTypeTieBreakingNotes\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.FM_TieNotes.ToString())).Append("\",");
+                            }
+                            else
+                            {
+                                sb.Append("\"FeatureMatchingResultTypeTieBreakingNotes\" : \"").Append(JSONUtils.CleanText("")).Append("\",");
+                            }
+                            sb.Append("\"TieHandlingStrategyType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.FM_TieStrategy.ToString())).Append("\",");
+                            sb.Append("\"ExceptionOccured\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.ExceptionOccurred.ToString())).Append("\",");
+                            if (webServiceGeocodeQueryResult.ExceptionOccurred && webServiceGeocodeQueryResult.ErrorMessage != null)
+                            {
+                                sb.Append("\"Exception\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.ErrorMessage.ToString())).Append("\",");
+                            }
+                            else
+                            {
+                                sb.Append("\"Exception\" : \"\",");
+                            }
+                            sb.Append("\"ErrorMessage\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.ErrorMessage)).Append("\"");
+
+                            geocodeCount = geocodeCount - 1;
+                            if (geocodeCount == 0)
+                            {
+                                if (args.ShouldOutputCensusFields || verbose)
+                                {
+                                    sb.Append("},");
+                                }
+                                else
+                                {
+                                    sb.Append("}");
+                                }
+                            }
+                            else
+                            {
+                                sb.Append("},");
+                            }
+
+                            if (args.ShouldOutputCensusFields || verbose)
+                            {
+                                if (webServiceGeocodeQueryResult.CensusRecords != null)
+                                {
+                                    if (webServiceGeocodeQueryResult.CensusRecords.Count > 0)
+                                    {
+                                        sb.Append("\"CensusValues" + currentCount + "\" :");
+                                        sb.Append("[");
+                                        sb.Append("{");
+                                        int censusCount = webServiceGeocodeQueryResult.CensusRecords.Count;
+                                        foreach (CensusOutputRecord censusOutputRecord in webServiceGeocodeQueryResult.CensusRecords)
+                                        {
+                                            sb.Append("\"CensusValue" + censusCount + "\" :");
+                                            sb.Append("{");
+                                            sb.Append("\"CensusYear\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusYear.ToString())).Append("\",");
+                                            sb.Append("\"CensusTimeTaken\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusTimeTaken.ToString())).Append("\",");
+                                            sb.Append("\"naaccrCertCode\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.NAACCRCensusTractCertaintyCode.ToString())).Append("\",");
+                                            sb.Append("\"naaccrCertType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.NAACCRCensusTractCertaintyType.ToString())).Append("\",");
+                                            sb.Append("\"CensusBlock\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusBlock)).Append("\",");
+                                            sb.Append("\"CensusBlockGroup\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusBlockGroup)).Append("\",");
+                                            sb.Append("\"CensusTract\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusTract)).Append("\",");
+                                            sb.Append("\"CensusCountyFips\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusCountyFips)).Append("\",");
+                                            sb.Append("\"CensusStateFips\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusStateFips)).Append("\",");
+                                            sb.Append("\"CensusCbsaFips\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusCbsaFips)).Append("\",");
+                                            sb.Append("\"CensusCbsaMicro\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusCbsaMicro)).Append("\",");
+                                            sb.Append("\"CensusMcdFips\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusMcdFips)).Append("\",");
+                                            sb.Append("\"CensusMetDivFips\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusMetDivFips)).Append("\",");
+                                            sb.Append("\"CensusMsaFips\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusMsaFips)).Append("\",");
+                                            sb.Append("\"CensusPlaceFips\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.CensusPlaceFips)).Append("\",");
+                                            sb.Append("\"ExceptionOccured\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.ExceptionOccurred.ToString())).Append("\",");
+
+                                            if (censusOutputRecord.ExceptionOccurred && censusOutputRecord.ExceptionMessage != null)
+                                            {
+                                                sb.Append("\"Exception\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.ExceptionMessage.ToString())).Append("\",");
+                                            }
+                                            else
+                                            {
+                                                sb.Append("\"Exception\" : \"\",");
+                                            }
+
+                                            sb.Append("\"ErrorMessage\" : \"").Append(JSONUtils.CleanText(censusOutputRecord.ExceptionMessage)).Append("\"");
+                                            censusCount = censusCount - 1;
+                                            if (censusCount == 0)
+                                            {
+                                                sb.Append("}");
+
+                                            }
+                                            else
+                                            {
+                                                sb.Append("},");
+                                            }
+                                        }
+
+                                        //}
+                                        sb.Append("}");
+                                        if (verbose)
+                                        {
+                                            sb.Append("],");
+                                        }
+                                        else
+                                        {
+                                            sb.Append("]");
+                                        }
+                                    }
+
+                                }
+                            }
+                            if (verbose)
+                            {
+
+                                sb.Append("\"ReferenceFeature" + currentCount + "\" :");
+                                sb.Append("{");
+                                sb.Append("\"Name\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.StreetName)).Append("\",");
+                                sb.Append("\"Number\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.Number)).Append("\",");
+                                sb.Append("\"NumberFractional\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.NumberFractional)).Append("\",");
+                                sb.Append("\"PreDirectional\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.PreDirectional)).Append("\",");
+                                sb.Append("\"PreQualifier\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.PreQualifier)).Append("\",");
+                                sb.Append("\"PreType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.PreType)).Append("\",");
+                                sb.Append("\"PreArticle\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.PreArticle)).Append("\",");
+                                sb.Append("\"PostArticle\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.PostArticle)).Append("\",");
+                                sb.Append("\"PostQualifier\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.PostQualifier)).Append("\",");
+                                sb.Append("\"Suffix\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.Suffix)).Append("\",");
+                                sb.Append("\"PostDirectional\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.PostDirectional)).Append("\",");
+                                sb.Append("\"SuiteType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.SuiteType)).Append("\",");
+                                sb.Append("\"SuiteNumber\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.SuiteNumber)).Append("\",");
+                                sb.Append("\"PostOfficeBoxType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.PostOfficeBoxType)).Append("\",");
+                                sb.Append("\"PostOfficeBoxNumber\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.PostOfficeBoxNumber)).Append("\",");
+                                sb.Append("\"City\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.City)).Append("\",");
+                                sb.Append("\"ConsolidatedCity\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.ConsolidatedCity)).Append("\",");
+                                sb.Append("\"MinorCivilDivision\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.MinorCivilDivision)).Append("\",");
+                                sb.Append("\"CountySubRegion\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.CountySubregion)).Append("\",");
+                                sb.Append("\"County\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.County)).Append("\",");
+                                sb.Append("\"State\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.State)).Append("\",");
+                                sb.Append("\"Zip\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.ZIP)).Append("\",");
+                                sb.Append("\"ZipPlus1\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.ZIPPlus1)).Append("\",");
+                                sb.Append("\"ZipPlus2\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.ZIPPlus2)).Append("\",");
+                                sb.Append("\"ZipPlus3\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.ZIPPlus3)).Append("\",");
+                                sb.Append("\"ZipPlus4\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.ZIPPlus4)).Append("\",");
+                                sb.Append("\"ZipPlus5\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.ZIPPlus5)).Append("\",");
+                                sb.Append("\"Area\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeature.MatchedReferenceFeature.StreetAddressableGeographicFeature.Geometry.Area.ToString())).Append("\",");
+                                sb.Append("\"AreaType\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeature.MatchedReferenceFeature.StreetAddressableGeographicFeature.Geometry.AreaUnits.ToString())).Append("\",");
+                                //PAYTON:JSON Geometry was simply too large to include as a string element within the JSON
+                                //if (webServiceGeocodeQueryResult.MatchedFeature.MatchedReferenceFeature.StreetAddressableGeographicFeature.Geometry.SqlGeometry != null)
+                                //{
+                                //    sb.Append("\"Geometry\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeature.MatchedReferenceFeature.StreetAddressableGeographicFeature.Geometry.SqlGeometry.AsGml().Value.ToString())).Append("\",");
+                                //}
+                                //else
+                                //{
+                                sb.Append("\"Geometry\" : \"").Append(JSONUtils.CleanText("")).Append("\",");
+                                //}          
+                                if (webServiceGeocodeQueryResult.MatchedFeature.PrimaryIdField != null)
+                                {
+                                    sb.Append("\"PrimaryIdField\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeature.PrimaryIdField.ToString())).Append("\",");
+                                }
+                                else
+                                {
+                                    sb.Append("\"PrimaryIdField\" : \"").Append(JSONUtils.CleanText("")).Append("\",");
+                                }
+
+                                if (webServiceGeocodeQueryResult.MatchedFeature.PrimaryIdValue != null)
+                                {
+                                    sb.Append("\"PrimaryIdValue\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeature.PrimaryIdValue.ToString())).Append("\",");
+                                }
+                                else
+                                {
+                                    sb.Append("\"PrimaryIdValue\" : \"").Append(JSONUtils.CleanText("")).Append("\",");
+                                }
+
+                                if (webServiceGeocodeQueryResult.MatchedFeature.SecondaryIdField != null)
+                                {
+                                    sb.Append("\"SecondaryIdField\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeature.SecondaryIdField.ToString())).Append("\",");
+                                }
+                                else
+                                {
+                                    sb.Append("\"SecondaryIdField\" : \"").Append(JSONUtils.CleanText("")).Append("\",");
+                                }
+
+                                if (webServiceGeocodeQueryResult.MatchedFeature.SecondaryIdValue != null)
+                                {
+                                    sb.Append("\"SecondaryIdValue\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeature.SecondaryIdValue.ToString())).Append("\",");
+                                }
+                                else
+                                {
+                                    sb.Append("\"SecondaryIdValue\" : \"").Append(JSONUtils.CleanText("")).Append("\",");
+                                }
+                                sb.Append("\"Vintage\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.SourceVintage)).Append("\",");
+                                sb.Append("\"Source\" : \"").Append(JSONUtils.CleanText(webServiceGeocodeQueryResult.MatchedFeatureAddress.Source)).Append("\"");
+
+                            }
+                            if (geocodeCount == 0 || currentCount == 10)
+                            {
+                                sb.Append("}");
+                            }
+                            else
+                            {
+                                sb.Append("},");
+                            }
+                            currentCount++;
+                            //geocodeCount = geocodeCount - 1;
+                        }
+                        else
+                        {
+                            geocodeCount = geocodeCount - 1;
+                        }
+                        //currentCount++;
+                    }
+                    //}
+
+                }
+
+            }
+            //}
+            //sb.Append("}");
+            //sb.Append("]");
+            //sb.Length = sb.Length - 2;
+            //sb.Append("}");
+            sb.Append("}]}");
+            return sb.ToString();
         }
     }
 }

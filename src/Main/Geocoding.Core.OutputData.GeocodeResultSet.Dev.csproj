@@ -146,7 +146,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\AddressProcessing.Core\src\Main\AddressProcessing.Core.Dev.csproj">
-      <Project>{D971C282-ECC4-4C07-A481-5BC862934B96}</Project>
+      <Project>{d971c282-ecc4-4c07-a481-5bc862934b96}</Project>
       <Name>AddressProcessing.Core.Dev</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Common.Core.Addresses\Src\Main\Common.Core.Addresses.Dev.csproj">
@@ -157,6 +157,18 @@
       <Project>{CA57DD09-BCF7-439A-A6FB-6FCBE125FB71}</Project>
       <Name>Common.Core.Configurations.Dev</Name>
       <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Common.Core.Geo.GeographicFeatures.Streets\Src\Main\Common.Core.Geo.GeographicFeatures.Streets.Dev.csproj">
+      <Project>{0C225E8B-E8AA-4AC2-A5BA-4B00AE357311}</Project>
+      <Name>Common.Core.Geo.GeographicFeatures.Streets.Dev</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Common.Core.Geo.Geometries\Src\Main\Common.Core.Geo.Geometries.Dev.csproj">
+      <Project>{E8164C90-2753-46F3-937A-653039318563}</Project>
+      <Name>Common.Core.Geo.Geometries.Dev</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Common.Core.Geo.Units\Src\Main\Common.Core.Geo.Units.Dev.csproj">
+      <Project>{5F42520E-2DDA-4B4A-AFE5-5F5E00E33D47}</Project>
+      <Name>Common.Core.Geo.Units.Dev</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Common.Core.Utils\Src\Main\Common.Core.Utils.Dev.csproj">
       <Project>{0744A732-A7FE-4658-967D-C5A583EF08E4}</Project>
@@ -171,10 +183,18 @@
       <Project>{a7df15f2-1210-4431-b223-a3a2810dc14a}</Project>
       <Name>Common.Data.Databases.Dev</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Geocoding.Core.Algorithms.FeatureInterpolation.Types\src\Main\Geocoding.Core.Algorithms.FeatureInterpolation.Types.Dev.csproj">
+      <Project>{50DC9453-F8FC-45AA-B940-459E09C0D676}</Project>
+      <Name>Geocoding.Core.Algorithms.FeatureInterpolation.Types.Dev</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Geocoding.Core.Algorithms.FeatureMatching.MatchedFeature\src\Main\Geocoding.Core.Algorithms.FeatureMatching.MatchedFeature.Dev.csproj">
       <Project>{8D4887D7-7595-4F08-A1DE-2B8D6FBC220F}</Project>
       <Name>Geocoding.Core.Algorithms.FeatureMatching.MatchedFeature.Dev</Name>
       <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Geocoding.Core.Algorithms.FeatureMatching.SelectionMethods\src\Main\Geocoding.Core.Algorithms.FeatureMatching.SelectionMethods.Dev.csproj">
+      <Project>{58A97F94-A955-473B-9FF7-80892B17B0B5}</Project>
+      <Name>Geocoding.Core.Algorithms.FeatureMatching.SelectionMethods.Dev</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Geocoding.Core.Algorithms.FeatureMatchScorers.MatchScoreResults\src\Main\Geocoding.Core.Algorithms.FeatureMatchScorers.MatchScoreResults.Dev.csproj">
       <Project>{1b0d73cf-1bf7-41eb-8792-e30319222ad7}</Project>
@@ -183,6 +203,10 @@
     <ProjectReference Include="..\..\..\Geocoding.Core.Algorithms.PenaltyScoring\src\Main\Geocoding.Core.Algorithms.PenaltyScoring.Dev.csproj">
       <Project>{dda124f6-c2d0-4023-8e54-e2f4f7ac3bbf}</Project>
       <Name>Geocoding.Core.Algorithms.PenaltyScoring.Dev</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Geocoding.Core.Algorithms.TieHandling.Types\src\Main\Geocoding.Core.Algorithms.TieHandling.Types.Dev.csproj">
+      <Project>{92552C9A-68D0-47AD-90A6-601674C5AE33}</Project>
+      <Name>Geocoding.Core.Algorithms.TieHandling.Types.Dev</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\Geocoding.Core.Configurations\src\Main\Geocoding.Core.Configurations.Dev.csproj">
       <Project>{0D43D32A-C1F4-4D7C-B70B-3B7AE9D8CE03}</Project>
@@ -225,6 +249,10 @@
       <Project>{ac115040-d3ee-4ab7-a3e5-5842724acc15}</Project>
       <Name>Geocoding.Core.OutputData.Dev</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\Geocoding.Core.Queries\src\Main\Geocoding.Core.Queries.Dev.csproj">
+      <Project>{A1CEFF20-E839-47DE-88C4-06A8AD225221}</Project>
+      <Name>Geocoding.Core.Queries.Dev</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\Geocoding.Core.ReferenceDatasets.FeatureSources.Interfaces\src\Main\Geocoding.Core.ReferenceDatasets.FeatureSources.Interfaces.Dev.csproj">
       <Project>{9eb4e875-ca0b-46b7-98c3-3a813337f1e4}</Project>
       <Name>Geocoding.Core.ReferenceDatasets.FeatureSources.Interfaces.Dev</Name>
@@ -232,6 +260,10 @@
     <ProjectReference Include="..\..\..\Geocoding.Core.ReferenceDatasets.FeatureSources\src\Main\Geocoding.Core.ReferenceDatasets.FeatureSources.Dev.csproj">
       <Project>{2c4a6d3d-a46a-4988-a34d-be8be5d63fc3}</Project>
       <Name>Geocoding.Core.ReferenceDatasets.FeatureSources.Dev</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Geocoding.Core.ReferenceDatasets.ReferenceFeatures\src\Main\Geocoding.Core.ReferenceDatasets.ReferenceFeatures.Dev.csproj">
+      <Project>{EE959596-3EE0-4CE2-AA08-A707360AA23D}</Project>
+      <Name>Geocoding.Core.ReferenceDatasets.ReferenceFeatures.Dev</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\PointIntersectors.Census\src\Main\PointIntersectors.Census.Dev.csproj">
       <Project>{5328fadb-9d7c-410a-877e-f03e08367d9c}</Project>
