@@ -44,7 +44,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         public string MicroMatchStatus { get; set; }
         public PenaltyCodeResult PenaltyCodeResult { get; set; }
         public string PenaltyCode { get; set; }
-
+        public string PenaltyCodeSummary { get; set; }
         public int parcelMatches = 0;
         public int streetMatches = 0;
         public FeatureMatchingResultType FeatureMatchingResultType { get; set; }
@@ -726,12 +726,12 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     //}
                                     if (avgParcelDistance < 10 && parcelMatches > 1 && getCensusMatchStatus())
                                     {
-                                        this.MicroMatchStatus = "Match";
-                                    }
+                                        this.MicroMatchStatus = "Match";                                        
+                                    }                                   
                                     if (parcelMatches == 0 && streetMatches > 1 && avgStreetDistance < 10 && getCensusMatchStatus())
                                     {
-                                        this.MicroMatchStatus = "Match";
-                                    }
+                                        this.MicroMatchStatus = "Match";                                      
+                                    }                                    
                                     if (geocodes[0].Version >= 4.4)
                                     {
                                         getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
@@ -771,6 +771,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 {
                     this.PenaltyCodeResult = new PenaltyCodeResult();
                     this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
+                    this.PenaltyCodeSummary = this.PenaltyCodeResult.getPenaltyStringSummary();
                 }
             }
             else
@@ -778,6 +779,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 this.MicroMatchStatus = "Non-Match";
                 this.PenaltyCodeResult = new PenaltyCodeResult();
                 this.PenaltyCode = this.PenaltyCodeResult.getPenaltyString();
+                this.PenaltyCodeSummary = this.PenaltyCodeResult.getPenaltyStringSummary();
             }
             this.GeocodeCollection.Geocodes = geocodes;
             return ret;
@@ -1077,20 +1079,21 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         {
             bool ret = false;
             //            
-
+           
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn, geocoderConfiguration);
+            bool isValidAlias = CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State);
             if (geocodes.Count > 0)
             {
                 // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
-                //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+                //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)                
                 if (geocodes[0].MatchScore < 100)
                 {
                     if (geocodes[0].MatchScore > 84)
                     {
                         if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                         {
-                            if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 97)
+                            if ((geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || isValidAlias) && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 97)
                             {
                                 this.MicroMatchStatus = "Match";
                             }
@@ -1105,12 +1108,28 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                 {
                                     this.MicroMatchStatus = "Match";
                                 }
+                                else
+                                {
+                                    if(geocodes[0].MatchedFeatureAddress.City.ToUpper() != geocodes[0].InputAddress.City.ToUpper() && !isValidAlias)
+                                    {
+                                        this.PenaltyCodeResult.citySummary = "R";
+                                    }
+                                    this.PenaltyCodeResult.distanceSummary = "R";                                   
+                                }
                                 getDistancePenalty(avgDistance);
                             }
                         }
                         else
                         {
                             this.MicroMatchStatus = "Review";
+                            if(geocodes[0].MatchedFeatureAddress.City != null)
+                            {
+                                this.PenaltyCodeResult.zipPenaltySummary = "R";
+                            }
+                            else
+                            {
+                                this.PenaltyCodeResult.citySummary = "R";
+                            }
                         }
                     }
                     else //anything not match or review is returned as non-match
@@ -1121,9 +1140,10 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 else //if we reach here then matchscore is 100 and we return a "Match"
                 {
                     //PAYTON:PENALTYCODE
-                    if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State))
+                    if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && isValidAlias)
                     {
                         this.PenaltyCodeResult.city = "1";
+                        this.PenaltyCodeResult.citySummary = "M";
                     }
                     this.MicroMatchStatus = "Match";
                 }
@@ -1131,6 +1151,19 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             else //anything not match or review is returned as non-match
             {
                 this.MicroMatchStatus = "Non-Match";
+                if (geocodes[0].InputAddress.City != geocodes[0].MatchedFeatureAddress.City && isValidAlias)
+                {
+                    this.PenaltyCodeResult.city = "1";
+                    this.PenaltyCodeResult.citySummary = "F";
+                }
+                if (geocodes[0].MatchedFeatureAddress.City == null)
+                {
+                    this.PenaltyCodeResult.citySummary = "F";
+                }
+                else if(geocodes[0].MatchedFeatureAddress.ZIP == null)
+                {
+                    this.PenaltyCodeResult.zipPenaltySummary = "F";
+                }
             }
             return ret;
         }
@@ -1139,7 +1172,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         {
             if (avgDistance <= 10 && avgDistance > 0) //10m or less
             {
-                this.PenaltyCodeResult.distance = "-";
+                this.PenaltyCodeResult.distance = "M";
             }
             else if (avgDistance <= 100 && avgDistance > 10) //+10m-100m
             {
@@ -1160,6 +1193,10 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             else if (avgDistance > 5000)  //+5km
             {
                 this.PenaltyCodeResult.distance = "5";
+            }
+            else
+            {
+                this.PenaltyCodeResult.distance = "F";
             }
         }
 
