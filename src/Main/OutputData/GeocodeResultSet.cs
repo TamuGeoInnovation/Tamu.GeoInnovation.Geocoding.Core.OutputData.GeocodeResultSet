@@ -713,7 +713,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     this.MicroMatchStatus = "Match";
                                 }
                                 else
-                                {
+                                {                                    
                                     this.MicroMatchStatus = "Review";
                                     //double avgDistance = getAverageDistance();
                                     parcelMatches = 0;
@@ -731,11 +731,19 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     if (parcelMatches == 0 && streetMatches > 1 && avgStreetDistance < 10 && getCensusMatchStatus())
                                     {
                                         this.MicroMatchStatus = "Match";                                      
-                                    }                                    
+                                    }
+                                    else
+                                    {
+                                        if (geocodes[0].MatchedFeatureAddress.ZIP != geocodes[0].InputAddress.ZIP)
+                                        {
+                                            this.PenaltyCodeResult.zipPenaltySummary = "R";
+                                        }
+                                    }
                                     if (geocodes[0].Version >= 4.4)
                                     {
                                         getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
                                     }
+                                    
                                 }
                             }
                             else
