@@ -696,19 +696,20 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 if (geocodes.Count > 0)
                 {
                     //PAYTON:PenaltyCode
-                    if (geocodes[0].Version >= 4.4)
-                    {
-                        this.PenaltyCodeResult = new PenaltyCodeResult();
-                    }
+                    //if (geocodes[0].Version >= 4.4)
+                    //{
+                    //    this.PenaltyCodeResult = new PenaltyCodeResult();
+                    //}
                     // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
                     //if (geocodes[0].NAACCRGISCoordinateQualityCode == "00" && geocodes[0].MatchScore > 90)
+                    this.PenaltyCodeResult = new PenaltyCodeResult(); //even though penalty code won't be displayed for < 4.4 we still need it here to prevent errors
                     if (geocodes[0].MatchScore < 100)
                     {
                         if (geocodes[0].MatchScore > 84)
                         {
                             if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                             {
-                                if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 97)
+                                if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 95)
                                 {
                                     this.MicroMatchStatus = "Match";
                                 }
@@ -734,14 +735,22 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     }
                                     else
                                     {
-                                        if (geocodes[0].MatchedFeatureAddress.ZIP != geocodes[0].InputAddress.ZIP)
+                                        if (geocodes[0].MatchedFeatureAddress.ZIP != geocodes[0].InputAddress.ZIP && geocodes[0].Version >= 4.4)
                                         {
                                             this.PenaltyCodeResult.zipPenaltySummary = "R";
                                         }
                                     }
                                     if (geocodes[0].Version >= 4.4)
                                     {
-                                        getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
+                                        if (avgParcelDistance > 0 || avgStreetDistance > 0)
+                                        {
+                                            getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
+                                        }
+                                        else
+                                        {
+                                            this.PenaltyCodeResult.distance = "M";
+                                            this.PenaltyCodeResult.distanceSummary = "M";
+                                        }
                                     }
                                     
                                 }
@@ -1101,7 +1110,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     {
                         if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                         {
-                            if ((geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || isValidAlias) && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 97)
+                            if ((geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || isValidAlias) && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 95)
                             {
                                 this.MicroMatchStatus = "Match";
                             }
@@ -1181,30 +1190,37 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             if (avgDistance <= 10 && avgDistance > 0) //10m or less
             {
                 this.PenaltyCodeResult.distance = "M";
+                this.PenaltyCodeResult.distanceSummary = "M";
             }
             else if (avgDistance <= 100 && avgDistance > 10) //+10m-100m
             {
                 this.PenaltyCodeResult.distance = "1";
+                this.PenaltyCodeResult.distanceSummary = "M";
             }
             else if (avgDistance <= 500 && avgDistance > 100) //+100m-500m
             {
                 this.PenaltyCodeResult.distance = "2";
+                this.PenaltyCodeResult.distanceSummary = "R";
             }
             else if (avgDistance <= 1000 && avgDistance > 500) //+500m-1000m
             {
                 this.PenaltyCodeResult.distance = "3";
+                this.PenaltyCodeResult.distanceSummary = "R";
             }
             else if (avgDistance <= 5000 && avgDistance > 1000) //+1km-5km
             {
                 this.PenaltyCodeResult.distance = "4";
+                this.PenaltyCodeResult.distanceSummary = "R";
             }            
             else if (avgDistance > 5000)  //+5km
             {
                 this.PenaltyCodeResult.distance = "5";
+                this.PenaltyCodeResult.distanceSummary = "R";
             }
             else
             {
                 this.PenaltyCodeResult.distance = "F";
+                this.PenaltyCodeResult.distanceSummary = "F";
             }
         }
 
