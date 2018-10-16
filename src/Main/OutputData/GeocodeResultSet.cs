@@ -394,8 +394,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             List<IGeocode> ret = new List<IGeocode>();
             if (GeocodeCollection.Geocodes.Count > 0)
             {
-                List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
-
+                List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();                
                 //Ideally we want to use the default order of preferred references here to get the best geocode                 
 
                 //IFeatureSource[] referenceSources = BuildReferenceSources(geocoderConfiguration, geocoderConfiguration.OutputHierarchyConfiguration.FeatureMatchingHierarchyOrdering);
@@ -404,13 +403,14 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
                 //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
                 ret = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
+                              
                 this.GeocodeCollection.Geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore);
 
                 //PAYTON:MULTITHREADING-sort at this point we have it sorted based on Preferred reference. We still need to select the 'best' geocode
                 //PAYTON:v4.03 Updating to return lower level street match if the zipcode matches input zipcode
                 if (geocodes.Count > 0)
                 {
-                    if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP)
+                    if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP & ret[0].MatchScore>60) //BUG:X7-49 Added logic to only perform this if return is better than zipcode level, else use area weighting
                     {
                         double score = ret[0].MatchScore;
                         int i = 0;
@@ -439,7 +439,12 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     }
                     else //if first address zip is correct then there is no need to test remaining geocodes for better match
                     {
-                        //do nothing
+                        //if Address is not better than zipcode level use area weighting to determine best geocode
+                        if (ret[0].MatchScore <= 60)
+                        {
+                            //BUG:X7-59 Issue here is that our zipcode returns are points and not polygons so the area is 0. *update using area from ZCTA
+                            ret = geocodes.OrderBy(x => x.GeocodedError.ErrorBounds).ToList();
+                        }
                     }
 
                 }
