@@ -439,12 +439,13 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     }
                     else //if first address zip is correct then there is no need to test remaining geocodes for better match
                     {
+                        //BUG:X7-59 This is updated - should only do this when uncertainty hierarchy is checked. This is done in SortByHierarchyUncertainty()
                         //if Address is not better than zipcode level use area weighting to determine best geocode
-                        if (ret[0].MatchScore <= 60)
-                        {
-                            //BUG:X7-59 Issue here is that our zipcode returns are points and not polygons so the area is 0. *update using area from ZCTA
-                            ret = geocodes.OrderBy(x => x.GeocodedError.ErrorBounds).ToList();
-                        }
+                        //if (ret[0].MatchScore <= 60)
+                        //{
+                        //    //BUG:X7-59 Issue here is that our zipcode returns are points and not polygons so the area is 0. *update using area from ZCTA
+                        //    ret = geocodes.OrderBy(x => x.GeocodedError.ErrorBounds).ToList();
+                        //}
                     }
 
                 }
