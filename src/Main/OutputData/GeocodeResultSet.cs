@@ -45,8 +45,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         public PenaltyCodeResult PenaltyCodeResult { get; set; }
         public string PenaltyCode { get; set; }
         public string PenaltyCodeSummary { get; set; }
-        public int parcelMatches = 0;
-        public int streetMatches = 0;
+        //X7-93 - these were added for calculation purposes in this class but should not be included in geocode results output
+        private int parcelMatches = 0;
+        private int streetMatches = 0;
         public FeatureMatchingResultType FeatureMatchingResultType { get; set; }
         public int FeatureMatchingResultCount { get; set; }
 
@@ -715,11 +716,14 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                         {
                             if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                             {
-                                if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 95)
+                                //BUG:X7-88 We need to account for city alias here as well if using alias table                                    
+                                if ((geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || CityUtils.isValidAlias(geocodes[0].InputAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.State)) && geocodes[0].InputAddress.ZIP == geocodes[0].MatchedFeatureAddress.ZIP && geocodes[0].MatchScore > 95)
                                 {
                                     this.MicroMatchStatus = "Match";
                                 }
-                                else
+                                //Here we need to check against other results
+                                //if city is correct but zip is not, check other results
+                                else if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || CityUtils.isValidAlias(geocodes[0].InputAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.State))                                
                                 {                                    
                                     this.MicroMatchStatus = "Review";
                                     //double avgDistance = getAverageDistance();
@@ -1104,8 +1108,14 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             //            
            
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
-            List<IGeocode> geocodes = SortByConfidence(geocodesIn, geocoderConfiguration);
-            bool isValidAlias = CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State);
+            //List<IGeocode> geocodes = SortByConfidence(geocodesIn, geocoderConfiguration);
+            List<IGeocode> geocodes = SortByConfidence(geocodesIn);
+            this.PenaltyCodeResult = new PenaltyCodeResult();
+            bool isValidAlias = false;
+            if(geocoderConfiguration.ShouldUseAliasTable)
+            {
+                isValidAlias = CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State);
+            }
             if (geocodes.Count > 0)
             {
                 // Coordinate code should not be used here as a street segment should be a viable match as well as parcel, point etc
@@ -1116,30 +1126,81 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     {
                         if (geocodes[0].MatchedFeatureAddress.City != null && geocodes[0].MatchedFeatureAddress.ZIP != null)
                         {
-                            if ((geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || isValidAlias) && geocodes[0].MatchedFeatureAddress.ZIP == geocodes[0].InputAddress.ZIP && geocodes[0].MatchScore > 95)
+                            //BUG:X7-88 We need to account for city alias here as well
+                            if (geocoderConfiguration.ShouldUseAliasTable)
                             {
-                                this.MicroMatchStatus = "Match";
-                            }
-                            else
-                            {
-                                this.MicroMatchStatus = "Review";
-                                double avgDistance = getAverageDistance();
-                                //If the average distance is less than 1/5 of a mile - assume it's a good match
-                                //Adding a count check as well to account for all navteq references to return a non-valid match but all the same coords
-                                //if count is > 5 it's safe to assume that multiple references are reporting the same location for the address
-                                if (avgDistance < .05 && geocodes.Count > 5)
+                                if ((geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || isValidAlias) && geocodes[0].InputAddress.ZIP == geocodes[0].MatchedFeatureAddress.ZIP && geocodes[0].MatchScore > 95)
                                 {
                                     this.MicroMatchStatus = "Match";
                                 }
+                                //Here we need to check against other results
+                                //if city is correct but zip is not, check other results
+                                else if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || isValidAlias)
+                                {
+                                    this.MicroMatchStatus = "Review";
+                                    double avgDistance = getAverageDistance();
+                                    //If the average distance is less than 1/5 of a mile - assume it's a good match
+                                    //Adding a count check as well to account for all navteq references to return a non-valid match but all the same coords
+                                    //if count is > 5 it's safe to assume that multiple references are reporting the same location for the address
+                                    if (avgDistance < .05 && geocodes.Count > 5)
+                                    {
+                                        this.MicroMatchStatus = "Match";
+                                    }
+                                    else
+                                    {
+                                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() != geocodes[0].InputAddress.City.ToUpper() && !isValidAlias)
+                                        {
+                                            this.PenaltyCodeResult.citySummary = "R";
+                                        }
+                                        this.PenaltyCodeResult.distanceSummary = "R";
+                                    }
+                                    getDistancePenalty(avgDistance);
+                                }
                                 else
                                 {
-                                    if(geocodes[0].MatchedFeatureAddress.City.ToUpper() != geocodes[0].InputAddress.City.ToUpper() && !isValidAlias)
+                                    this.MicroMatchStatus = "Review";                                   
+                                    this.PenaltyCodeResult.citySummary = "R";
+                                   
+                                }
+                            }
+                            else //if not using alias table all city penalties will be applied normally
+                            {
+                                if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() && geocodes[0].InputAddress.ZIP == geocodes[0].MatchedFeatureAddress.ZIP && geocodes[0].MatchScore > 95)
+                                {
+                                    this.MicroMatchStatus = "Match";
+                                }
+                                //Here we need to check against other results
+                                //if city is correct but zip is not, check other results
+                                else if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper())
+                                {
+                                    this.MicroMatchStatus = "Review";
+                                    double avgDistance = getAverageDistance();
+                                    //If the average distance is less than 1/5 of a mile - assume it's a good match
+                                    //Adding a count check as well to account for all navteq references to return a non-valid match but all the same coords
+                                    //if count is > 5 it's safe to assume that multiple references are reporting the same location for the address
+                                    if (avgDistance < .05 && geocodes.Count > 5)
+                                    {
+                                        this.MicroMatchStatus = "Match";
+                                    }
+                                    else
+                                    {
+                                        if (geocodes[0].MatchedFeatureAddress.City.ToUpper() != geocodes[0].InputAddress.City.ToUpper())
+                                        {
+                                            this.PenaltyCodeResult.citySummary = "R";
+                                        }
+                                        this.PenaltyCodeResult.distanceSummary = "R";
+                                    }
+                                    getDistancePenalty(avgDistance);
+                                }
+                                else
+                                {
+                                    this.MicroMatchStatus = "Review";
+                                    if (this.PenaltyCodeResult != null)
                                     {
                                         this.PenaltyCodeResult.citySummary = "R";
                                     }
-                                    this.PenaltyCodeResult.distanceSummary = "R";                                   
+
                                 }
-                                getDistancePenalty(avgDistance);
                             }
                         }
                         else
