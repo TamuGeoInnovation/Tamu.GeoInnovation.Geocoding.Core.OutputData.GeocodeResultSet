@@ -1,22 +1,21 @@
 using System;
 using System.Collections.Generic;
+using System.Device.Location;
+using System.Drawing;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Xml.Serialization;
-using System.Drawing;
-using System.Device.Location;
-using System.Reflection;
-
+using Tamu.GeoInnovation.Geocoding.Core.Algorithms.PenaltyScoring;
+using TAMU.GeoInnovation.PointIntersectors.Census.OutputData.CensusRecords;
+using USC.GISResearchLab.AddressProcessing.Core.Standardizing.StandardizedAddresses.Lines.LastLines;
+using USC.GISResearchLab.Common.Core.Geocoders.GeocodingQueries.Options;
+using USC.GISResearchLab.Common.Core.JSON;
+using USC.GISResearchLab.Core.WebServices.ResultCodes;
 using USC.GISResearchLab.Geocoding.Core.Configurations;
 using USC.GISResearchLab.Geocoding.Core.Metadata;
 using USC.GISResearchLab.Geocoding.Core.Metadata.FeatureMatchingResults;
 using USC.GISResearchLab.Geocoding.Core.Metadata.Qualities;
-using USC.GISResearchLab.Core.WebServices.ResultCodes;
-using USC.GISResearchLab.AddressProcessing.Core.Standardizing.StandardizedAddresses.Lines.LastLines;
-using Tamu.GeoInnovation.Geocoding.Core.Algorithms.PenaltyScoring;
-using USC.GISResearchLab.Common.Core.Geocoders.GeocodingQueries.Options;
-using USC.GISResearchLab.Common.Core.JSON;
-using TAMU.GeoInnovation.PointIntersectors.Census.OutputData.CensusRecords;
 
 namespace USC.GISResearchLab.Geocoding.Core.OutputData
 {
@@ -235,7 +234,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
 
                 try
-                {                     
+                {
                     IGeocode ret = null;
                     IGeocode bestHierarchy = BestGeocodeHierarchyFeatureType;
                     List<IGeocode> tempList = new List<IGeocode>();
@@ -286,7 +285,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     }
                     else
                     {
-                        
+
                     }
 
                     if (ret == null)
@@ -324,7 +323,8 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
         public void AddGeocodeList(List<IGeocode> geocodes)
         {
-            try {
+            try
+            {
                 GeocodeCollection.Geocodes.AddRange(geocodes);
             }
             catch (Exception e)
@@ -390,7 +390,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             List<IGeocode> ret = new List<IGeocode>();
             if (GeocodeCollection.Geocodes.Count > 0)
             {
-                List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();                
+                List<IGeocode> geocodes = GeocodeCollection.GetValidGeocodes();
                 //Ideally we want to use the default order of preferred references here to get the best geocode                 
 
                 //IFeatureSource[] referenceSources = BuildReferenceSources(geocoderConfiguration, geocoderConfiguration.OutputHierarchyConfiguration.FeatureMatchingHierarchyOrdering);
@@ -399,14 +399,14 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
 
                 //This is nothing but a placeholder. It's an ok sort but we need to determine here how to determine <accept-reject-review> 
                 ret = geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore).ToList();
-                              
+
                 this.GeocodeCollection.Geocodes.OrderBy(d => d.NAACCRGISCoordinateQualityCode).ThenByDescending(d => d.MatchScore);
 
                 //PAYTON:MULTITHREADING-sort at this point we have it sorted based on Preferred reference. We still need to select the 'best' geocode
                 //PAYTON:v4.03 Updating to return lower level street match if the zipcode matches input zipcode
                 if (geocodes.Count > 0)
                 {
-                    if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP & ret[0].MatchScore>60) //BUG:X7-49 Added logic to only perform this if return is better than zipcode level, else use area weighting
+                    if (ret[0].MatchedFeatureAddress.ZIP != ret[0].InputAddress.ZIP & ret[0].MatchScore > 60) //BUG:X7-49 Added logic to only perform this if return is better than zipcode level, else use area weighting
                     {
                         double score = ret[0].MatchScore;
                         int i = 0;
@@ -417,7 +417,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                 if (!object.ReferenceEquals(null, g))
                                 {
                                     //Payton:v4.04 added logic to account for reference sources not having a zip but matchscore indicates good match
-                                    if ((g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score) || g.MatchedFeatureAddress.ZIP == "" && g.MatchScore>90)
+                                    if ((g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score) || g.MatchedFeatureAddress.ZIP == "" && g.MatchScore > 90)
                                     //if (g.MatchedFeatureAddress.ZIP == g.InputAddress.ZIP && g.MatchScore > score)
                                     {
                                         ret.RemoveAt(i);
@@ -520,11 +520,11 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 {
                     ret.Add(GeocodeCollection.Geocodes[0]);
                 }
-                if(ret.Count<=0)
+                if (ret.Count <= 0)
                 {
                     ret.Add(GeocodeCollection.Geocodes[0]);
                 }
-            }           
+            }
             return ret;
         }
 
@@ -585,7 +585,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     {
                         throw new Exception("BOO in getValidGeocodes " + e.InnerException + " and msg: " + e.Message + "and record is: " + Convert.ToString(i) + "and value1 is: " + geocodes[i - 1].ToString() + "and value2 is: " + geocodes[i].ToString() + "and value2 is: " + geocodes[i + 1].ToString());
                     }
-                 }
+                }
                 //if zip is the same there is no need to check remaining geocodes
                 else
                 {
@@ -596,7 +596,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             else
             {
                 ret.Add(GeocodeCollection.Geocodes[0]);
-            }           
+            }
             return ret;
         }
 
@@ -693,8 +693,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             bool ret = false;
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
-            if (geocodes != null)            {
-                
+            if (geocodes != null)
+            {
+
                 if (geocodes.Count > 0)
                 {
                     //PAYTON:PenaltyCode
@@ -718,8 +719,8 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                 }
                                 //Here we need to check against other results
                                 //if city is correct but zip is not, check other results
-                                else if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || CityUtils.isValidAlias(geocodes[0].InputAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.State))                                
-                                {                                    
+                                else if (geocodes[0].MatchedFeatureAddress.City.ToUpper() == geocodes[0].InputAddress.City.ToUpper() || CityUtils.isValidAlias(geocodes[0].InputAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.State))
+                                {
                                     this.MicroMatchStatus = "Review";
                                     //double avgDistance = getAverageDistance();
                                     parcelMatches = 0;
@@ -732,11 +733,11 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     //}
                                     if (avgParcelDistance < 10 && parcelMatches > 1 && getCensusMatchStatus())
                                     {
-                                        this.MicroMatchStatus = "Match";                                        
-                                    }                                   
+                                        this.MicroMatchStatus = "Match";
+                                    }
                                     if (parcelMatches == 0 && streetMatches > 1 && avgStreetDistance < 10 && getCensusMatchStatus())
                                     {
-                                        this.MicroMatchStatus = "Match";                                      
+                                        this.MicroMatchStatus = "Match";
                                     }
                                     else
                                     {
@@ -757,7 +758,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                             this.PenaltyCodeResult.distanceSummary = "M";
                                         }
                                     }
-                                    
+
                                 }
                             }
                             else
@@ -771,7 +772,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                         }
                     }
                     else //if we reach here then matchscore is 100 and we return a "Match"
-                    {                        
+                    {
                         this.MicroMatchStatus = "Match";
                     }
                     //PAYTON:PENALTYCODE City  **Done all in SingleThreadedFeature....                  
@@ -785,9 +786,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     this.MicroMatchStatus = "Non-Match";
                 }
                 //PAYTON:PenaltyCode - only available in version 4.04 and after
-                if (geocodes.Count>0 && geocodes[0].Version >= 4.4)
+                if (geocodes.Count > 0 && geocodes[0].Version >= 4.4)
                 {
-                 //penalty already assigned   
+                    //penalty already assigned   
                 }
                 else //need to set empty penalty to prevent null here if not already assigned
                 {
@@ -956,11 +957,11 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         //    }
         //}
 
-    public double getAverageDistance(string type)
+        public double getAverageDistance(string type)
         {
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
-            int num_points = 0;           
+            int num_points = 0;
             //List<Point> normalPoints = new List<Point>();
             List<PointF> points = new List<PointF>();
             foreach (var resultPoint in geocodes)
@@ -1005,7 +1006,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     double dY = pts[0].Y - pts[i + 1].Y;
                     double multi = dX * dX + dY * dY;
                     GeoCoordinate point1 = new GeoCoordinate(pts[0].Y, pts[0].X);
-                    GeoCoordinate point2 = new GeoCoordinate(pts[i+1].Y, pts[i+1].X);
+                    GeoCoordinate point2 = new GeoCoordinate(pts[i + 1].Y, pts[i + 1].X);
                     //distance = distance + Math.Round(Math.Sqrt(multi), 3);
                     //distance in meters
                     //distance = (Math.Round(Math.Sqrt(multi), 8)) * 10000;                    
@@ -1101,13 +1102,13 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
         {
             bool ret = false;
             //            
-           
+
             List<IGeocode> geocodesIn = GeocodeCollection.GetValidGeocodes();
             //List<IGeocode> geocodes = SortByConfidence(geocodesIn, geocoderConfiguration);
             List<IGeocode> geocodes = SortByConfidence(geocodesIn);
             this.PenaltyCodeResult = new PenaltyCodeResult();
             bool isValidAlias = false;
-            if(geocoderConfiguration.ShouldUseAliasTable)
+            if (geocoderConfiguration.ShouldUseAliasTable)
             {
                 isValidAlias = CityUtils.isValidAlias(geocodes[0].InputAddress.City, geocodes[0].MatchedFeatureAddress.City, geocodes[0].InputAddress.State);
             }
@@ -1153,9 +1154,9 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                 }
                                 else
                                 {
-                                    this.MicroMatchStatus = "Review";                                   
+                                    this.MicroMatchStatus = "Review";
                                     this.PenaltyCodeResult.citySummary = "R";
-                                   
+
                                 }
                             }
                             else //if not using alias table all city penalties will be applied normally
@@ -1201,7 +1202,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                         else
                         {
                             this.MicroMatchStatus = "Review";
-                            if(geocodes[0].MatchedFeatureAddress.City != null)
+                            if (geocodes[0].MatchedFeatureAddress.City != null)
                             {
                                 this.PenaltyCodeResult.zipPenaltySummary = "R";
                             }
@@ -1239,7 +1240,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                 {
                     this.PenaltyCodeResult.citySummary = "F";
                 }
-                else if(geocodes[0].MatchedFeatureAddress.ZIP == null)
+                else if (geocodes[0].MatchedFeatureAddress.ZIP == null)
                 {
                     this.PenaltyCodeResult.zipPenaltySummary = "F";
                 }
@@ -1273,7 +1274,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
             {
                 this.PenaltyCodeResult.distance = "4";
                 this.PenaltyCodeResult.distanceSummary = "R";
-            }            
+            }
             else if (avgDistance > 5000)  //+5km
             {
                 this.PenaltyCodeResult.distance = "5";
