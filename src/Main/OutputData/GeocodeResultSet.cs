@@ -760,6 +760,47 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     }
 
                                 }
+                                // dan - 2020-01-25 - The case when the cities did not match and there was not an alias was not being handled, just copied from above. Not sure if this is the right penalty
+                                else if (geocodes[0].MatchedFeatureAddress.City.ToUpper() != geocodes[0].InputAddress.City.ToUpper() && !CityUtils.isValidAlias(geocodes[0].InputAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.City.ToUpper(), geocodes[0].MatchedFeatureAddress.State))
+                                {
+                                    this.MicroMatchStatus = "Review";
+                                    //double avgDistance = getAverageDistance();
+                                    parcelMatches = 0;
+                                    streetMatches = 0;
+                                    double avgParcelDistance = getAverageDistance("parcel");
+                                    double avgStreetDistance = getAverageDistance("street");
+
+                                    this.PenaltyCodeResult.citySummary = "3";
+
+                                    if (avgParcelDistance < 10 && parcelMatches > 1 && getCensusMatchStatus())
+                                    {
+                                        this.MicroMatchStatus = "Match";
+                                    }
+                                    if (parcelMatches == 0 && streetMatches > 1 && avgStreetDistance < 10 && getCensusMatchStatus())
+                                    {
+                                        this.MicroMatchStatus = "Match";
+                                    }
+                                    else
+                                    {
+                                        if (geocodes[0].MatchedFeatureAddress.ZIP != geocodes[0].InputAddress.ZIP && geocodes[0].Version >= 4.4)
+                                        {
+                                            this.PenaltyCodeResult.zipPenaltySummary = "R";
+                                        }
+                                    }
+                                    if (geocodes[0].Version >= 4.4)
+                                    {
+                                        if (avgParcelDistance > 0 || avgStreetDistance > 0)
+                                        {
+                                            getDistancePenalty((avgParcelDistance + avgStreetDistance) / 2);
+                                        }
+                                        else
+                                        {
+                                            this.PenaltyCodeResult.distance = "M";
+                                            this.PenaltyCodeResult.distanceSummary = "M";
+                                        }
+                                    }
+
+                                }
                             }
                             else
                             {
