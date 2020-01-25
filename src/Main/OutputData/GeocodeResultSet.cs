@@ -801,6 +801,10 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     }
 
                                 }
+                                else //anything not match or review is returned as non-match
+                                {
+                                    this.MicroMatchStatus = "Non-Match";
+                                }
                             }
                             else
                             {
