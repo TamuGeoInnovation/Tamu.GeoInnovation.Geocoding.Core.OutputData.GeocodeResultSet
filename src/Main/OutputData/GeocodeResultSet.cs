@@ -93,10 +93,6 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     break;
                                 }
                             }
-                            else
-                            {
-                                string here = "";
-                            }
                         }
 
                         // if the ret is null, none of the geocodes were valid - return the first one that was attempted
@@ -113,10 +109,6 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                         break;
                                     }
                                 }
-                                else
-                                {
-                                    string here = "";
-                                }
                             }
                         }
 
@@ -127,10 +119,6 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                             if (geocode != null)
                             {
                                 ret = GeocodeCollection.Geocodes[0];
-                            }
-                            else
-                            {
-                                string here = "";
                             }
                         }
                     }
@@ -155,15 +143,8 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                     {
                         ret.CompleteProcessStatistics = Statistics;
                     }
-                    else
-                    {
-                        string here = "";
-                    }
                 }
-                else
-                {
-                    string here = "";
-                }
+                
 
                 return ret;
             }
@@ -276,10 +257,6 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                                     ret = geocode;
                                     break;
                                 }
-                            }
-                            else
-                            {
-                                string here = "";
                             }
                         }
                     }
