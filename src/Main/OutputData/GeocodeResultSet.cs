@@ -144,7 +144,7 @@ namespace USC.GISResearchLab.Geocoding.Core.OutputData
                         ret.CompleteProcessStatistics = Statistics;
                     }
                 }
-                
+
 
                 return ret;
             }
